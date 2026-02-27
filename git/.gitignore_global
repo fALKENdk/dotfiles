@@ -1,0 +1,34 @@
+# Global machine-specific ignore rules.
+# Keep this conservative: only OS/editor-local noise.
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux filesystem artifacts
+*~
+.fuse_hidden*
+.nfs*
+
+# Editor temp files
+*.swp
+*.swo
+*.swx
+Session.vim
+
+# VS Code and Cursor local workspace state
+# If a repo intentionally tracks specific settings, add them with:
+#   git add -f .vscode/<file>
+.vscode/
+
+# JetBrains user-local state
+# Do not ignore all .idea/ to keep shareable project metadata commit-able.
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf

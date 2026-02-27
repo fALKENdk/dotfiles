@@ -1,0 +1,30 @@
+# macOS / editor noise
+.DS_Store
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Logs and shell/runtime artifacts
+**/*.log
+**/*_history
+**/.zcompdump*
+**/.python_history
+**/.lesshst
+
+# Machine-specific local config (backed up via local-config)
+local/
+
+# Secrets and credentials (never commit)
+**/.ssh/id_*
+**/.ssh/*_key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/*.kdbx
+**/*credentials*
+**/*.token
+**/.env
+**/.env.*
+!**/.env.example
+

@@ -1,0 +1,4 @@
+; Add scoped registry lines here. Example:
+; //pkgs.dev.azure.com/org/project/_packaging/feed/npm/registry/:username=${AZURE_NPM_USERNAME}
+; //pkgs.dev.azure.com/org/project/_packaging/feed/npm/registry/:_password=${AZURE_NPM_PASSWORD_B64}
+; //pkgs.dev.azure.com/org/project/_packaging/feed/npm/registry/:email=${AZURE_NPM_EMAIL}

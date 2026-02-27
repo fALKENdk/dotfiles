@@ -1,0 +1,20 @@
+{
+  "workbench.colorTheme": "Bearded Theme Solarized",
+  "workbench.startupEditor": "none",
+  "window.zoomLevel": 1,
+  "security.workspace.trust.untrustedFiles": "open",
+  "editor.accessibilitySupport": "off",
+  "editor.formatOnSave": true,
+  "editor.minimap.enabled": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.requireConfig": true,
+  "git.autofetch": true,
+  "git.openRepositoryInParentFolders": "never",
+  "terminal.integrated.suggest.enabled": true,
+  "cursor.composer.usageSummaryDisplay": "always",
+  "update.releaseTrack": "prerelease",
+  "[shellscript]": {
+    "editor.defaultFormatter": "mkhl.shfmt"
+  },
+  "shfmt.flags": ["-ci", "-bn"]
+}

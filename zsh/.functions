@@ -1,0 +1,35 @@
+# mkdir and cd into it in one step.
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Lazy-load NVM on first use of nvm/node/npm/npx to avoid ~200ms shell startup penalty.
+# @global NVM_SCRIPT     - path to nvm.sh (set in .platform-*)
+# @global NVM_COMPLETION - path to nvm bash completion (set in .platform-*)
+_lazy_load_nvm() {
+    unset -f _lazy_load_nvm nvm node npm npx
+    [[ -n "${NVM_SCRIPT:-}" && -s "$NVM_SCRIPT" ]] && source "$NVM_SCRIPT"
+    [[ -n "${NVM_COMPLETION:-}" && -s "$NVM_COMPLETION" ]] && source "$NVM_COMPLETION"
+}
+
+nvm()  { _lazy_load_nvm; nvm "$@"; }
+node() { _lazy_load_nvm; node "$@"; }
+npm()  { _lazy_load_nvm; npm "$@"; }
+npx()  { _lazy_load_nvm; npx "$@"; }
+
+# Run a command with sudo, or re-run the last command with sudo if called bare.
+please() {
+    if [[ "$#" -gt 0 ]]; then
+        sudo "$@"
+        return
+    fi
+
+    local last_cmd
+    last_cmd="$(fc -ln -1)"
+    [[ -z "$last_cmd" || "$last_cmd" == "please" ]] && {
+        echo "No previous command to rerun." >&2
+        return 1
+    }
+
+    print -z "sudo $last_cmd"
+}

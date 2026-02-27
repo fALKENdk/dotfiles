@@ -1,0 +1,46 @@
+#compdef dotfiles dotfiles-backup keychain-secrets local-config ssh-keys-backup
+
+_dotfiles() {
+    case "$service" in
+        dotfiles)
+            case $CURRENT in
+                2) compadd ${=:-$(dotfiles _completions 2>/dev/null)} ;;
+                3)
+                    case "${words[2]}" in
+                        secrets) compadd ${=:-$(keychain-secrets _completions 2>/dev/null)} ;;
+                        local) compadd ${=:-$(local-config _completions 2>/dev/null)} ;;
+                        ssh) compadd ${=:-$(ssh-keys-backup _completions 2>/dev/null)} ;;
+                        backup) _files ;;
+                    esac
+                    ;;
+                *) _files ;;
+            esac
+            ;;
+        dotfiles-backup)
+            _files
+            ;;
+        keychain-secrets)
+            if (( CURRENT == 2 )); then
+                compadd ${=:-$(keychain-secrets _completions 2>/dev/null)}
+            else
+                _files
+            fi
+            ;;
+        local-config)
+            if (( CURRENT == 2 )); then
+                compadd ${=:-$(local-config _completions 2>/dev/null)}
+            else
+                _files
+            fi
+            ;;
+        ssh-keys-backup)
+            if (( CURRENT == 2 )); then
+                compadd ${=:-$(ssh-keys-backup _completions 2>/dev/null)}
+            else
+                _files
+            fi
+            ;;
+    esac
+}
+
+_dotfiles "$@"

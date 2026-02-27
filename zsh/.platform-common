@@ -1,0 +1,15 @@
+# Common platform profile values shared across macOS and Linux.
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
+KEYCHAIN_SECRETS_SCRIPT="$DOTFILES_DIR/scripts/keychain-secrets.sh"
+
+# Clean up legacy local npmrc override from older setup.
+[[ "${NPM_CONFIG_USERCONFIG:-}" == "$HOME/.npmrc.local" ]] && unset NPM_CONFIG_USERCONFIG
+
+if [[ -x "$KEYCHAIN_SECRETS_SCRIPT" ]]; then
+    _ks_err="$(mktemp 2>/dev/null || echo "/tmp/.keychain-secrets-err.$$")"
+    _ks_out="$("$KEYCHAIN_SECRETS_SCRIPT" env development 2>"$_ks_err")" && eval "$_ks_out" || \
+        [[ -t 1 ]] && [[ -s "$_ks_err" ]] && echo "[dotfiles] keychain-secrets failed; run 'keychain-secrets doctor' to diagnose" >&2
+    rm -f "$_ks_err"
+    unset _ks_err _ks_out
+fi

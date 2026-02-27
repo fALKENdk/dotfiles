@@ -1,0 +1,15 @@
+tap "azure/azd"
+
+brew "azure/azd/azd"
+brew "bitwarden-cli"
+brew "dotnet"
+brew "fd"
+brew "git"
+brew "jq"
+brew "nvm"
+brew "ripgrep"
+brew "shellcheck"
+brew "shfmt"
+brew "tree"
+
+cask "bitwarden"

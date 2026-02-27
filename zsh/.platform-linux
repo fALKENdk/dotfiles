@@ -1,0 +1,3 @@
+export KEYCHAIN_SECRETS_BACKEND="pass"
+NVM_SCRIPT="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}/opt/nvm/nvm.sh"
+NVM_COMPLETION="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}/opt/nvm/etc/bash_completion.d/nvm"
