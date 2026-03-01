@@ -38,6 +38,7 @@ Notes:
   - Backend: KEYCHAIN_SECRETS_BACKEND=auto|security|pass (default: auto)
   - Pass backend path prefix: KEYCHAIN_PASS_PREFIX (default: dotfiles-secrets)
   - Set KEYCHAIN_BACKUP_PASSPHRASE for non-interactive backup/restore
+  - restore will add missing map entries into local/secrets/secrets-map.json
 EOF
 }
 
@@ -67,38 +68,52 @@ require_map() {
     fi
 }
 
+ensure_map_file() {
+    # Create an empty map file when missing (used by restore flow).
+    if [[ -f "$MAP_FILE" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$MAP_FILE")"
+    cat >"$MAP_FILE" <<'EOF'
+{
+  "entries": []
+}
+EOF
+}
+
 detect_backend() {
     # Select active backend from explicit setting or environment auto-detect.
     case "$KEYCHAIN_SECRETS_BACKEND" in
-        security | pass)
-            SECRET_BACKEND="$KEYCHAIN_SECRETS_BACKEND"
-            ;;
-        auto | "")
-            if command -v security >/dev/null 2>&1; then
-                SECRET_BACKEND="security"
-            elif command -v pass >/dev/null 2>&1; then
-                SECRET_BACKEND="pass"
-            else
-                echo "No supported secrets backend found. Install macOS 'security' (default) or 'pass'." >&2
-                exit 1
-            fi
-            ;;
-        *)
-            echo "Invalid KEYCHAIN_SECRETS_BACKEND: $KEYCHAIN_SECRETS_BACKEND" >&2
+    security | pass)
+        SECRET_BACKEND="$KEYCHAIN_SECRETS_BACKEND"
+        ;;
+    auto | "")
+        if command -v security >/dev/null 2>&1; then
+            SECRET_BACKEND="security"
+        elif command -v pass >/dev/null 2>&1; then
+            SECRET_BACKEND="pass"
+        else
+            echo "No supported secrets backend found. Install macOS 'security' (default) or 'pass'." >&2
             exit 1
-            ;;
+        fi
+        ;;
+    *)
+        echo "Invalid KEYCHAIN_SECRETS_BACKEND: $KEYCHAIN_SECRETS_BACKEND" >&2
+        exit 1
+        ;;
     esac
 }
 
 require_backend() {
     # Validate required backend binary is installed.
     case "$SECRET_BACKEND" in
-        security) require_cmd security ;;
-        pass) require_cmd pass ;;
-        *)
-            echo "Unsupported backend: $SECRET_BACKEND" >&2
-            exit 1
-            ;;
+    security) require_cmd security ;;
+    pass) require_cmd pass ;;
+    *)
+        echo "Unsupported backend: $SECRET_BACKEND" >&2
+        exit 1
+        ;;
     esac
 }
 
@@ -115,15 +130,15 @@ secret_exists() {
     local account="$2"
 
     case "$SECRET_BACKEND" in
-        security)
-            security find-generic-password -a "$account" -s "$service" >/dev/null 2>&1
-            ;;
-        pass)
-            pass show "$(pass_secret_path "$service" "$account")" >/dev/null 2>&1
-            ;;
-        *)
-            return 1
-            ;;
+    security)
+        security find-generic-password -a "$account" -s "$service" >/dev/null 2>&1
+        ;;
+    pass)
+        pass show "$(pass_secret_path "$service" "$account")" >/dev/null 2>&1
+        ;;
+    *)
+        return 1
+        ;;
     esac
 }
 
@@ -133,15 +148,15 @@ secret_get() {
     local account="$2"
 
     case "$SECRET_BACKEND" in
-        security)
-            security find-generic-password -a "$account" -s "$service" -w 2>/dev/null || true
-            ;;
-        pass)
-            pass show "$(pass_secret_path "$service" "$account")" 2>/dev/null | awk 'NR==1{print; exit}' || true
-            ;;
-        *)
-            return 1
-            ;;
+    security)
+        security find-generic-password -a "$account" -s "$service" -w 2>/dev/null || true
+        ;;
+    pass)
+        pass show "$(pass_secret_path "$service" "$account")" 2>/dev/null | awk 'NR==1{print; exit}' || true
+        ;;
+    *)
+        return 1
+        ;;
     esac
 }
 
@@ -153,16 +168,16 @@ secret_set() {
     local path
 
     case "$SECRET_BACKEND" in
-        security)
-            security add-generic-password -a "$account" -s "$service" -w "$value" -U >/dev/null
-            ;;
-        pass)
-            path="$(pass_secret_path "$service" "$account")"
-            printf '%s\n' "$value" | pass insert -m -f "$path" >/dev/null
-            ;;
-        *)
-            return 1
-            ;;
+    security)
+        security add-generic-password -a "$account" -s "$service" -w "$value" -U >/dev/null
+        ;;
+    pass)
+        path="$(pass_secret_path "$service" "$account")"
+        printf '%s\n' "$value" | pass insert -m -f "$path" >/dev/null
+        ;;
+    *)
+        return 1
+        ;;
     esac
 }
 
@@ -173,16 +188,16 @@ secret_delete() {
     local path
 
     case "$SECRET_BACKEND" in
-        security)
-            security delete-generic-password -a "$account" -s "$service" >/dev/null 2>&1 || true
-            ;;
-        pass)
-            path="$(pass_secret_path "$service" "$account")"
-            pass rm -f "$path" >/dev/null 2>&1 || true
-            ;;
-        *)
-            return 1
-            ;;
+    security)
+        security delete-generic-password -a "$account" -s "$service" >/dev/null 2>&1 || true
+        ;;
+    pass)
+        path="$(pass_secret_path "$service" "$account")"
+        pass rm -f "$path" >/dev/null 2>&1 || true
+        ;;
+    *)
+        return 1
+        ;;
     esac
 }
 
@@ -262,6 +277,62 @@ find_entry_by_env_var() {
     done < <(emit_map_entries all)
 
     return 1
+}
+
+normalize_account_template() {
+    local account="$1"
+    if [[ -z "$account" || (-n "${USER:-}" && "$account" == "$USER") ]]; then
+        # Keep restored maps portable across machines/usernames.
+        printf '%s' "__USER__"
+    else
+        printf '%s' "$account"
+    fi
+}
+
+ensure_map_entry() {
+    local collection="$1"
+    local env_var="$2"
+    local service="$3"
+    local account_template="$4"
+    local note="${5:-}"
+    local tmp_map
+
+    if jq -e \
+        --arg collection "$collection" \
+        --arg env_var "$env_var" \
+        --arg service "$service" \
+        '
+        (.entries // .) as $entries |
+        ($entries | if type == "array" then . else [] end) as $arr |
+        any($arr[]; .collection == $collection and .env_var == $env_var and .service == $service)
+    ' "$MAP_FILE" >/dev/null 2>&1; then
+        return 1
+    fi
+
+    tmp_map="$(mktemp)"
+    jq \
+        --arg collection "$collection" \
+        --arg env_var "$env_var" \
+        --arg service "$service" \
+        --arg account "$account_template" \
+        --arg note "$note" \
+        '
+        (.entries // .) as $entries |
+        ($entries | if type == "array" then . else [] end) as $arr |
+        {
+            entries: (
+                $arr + [{
+                    collection: $collection,
+                    env_var: $env_var,
+                    service: $service,
+                    account: $account,
+                    note: $note
+                }]
+            )
+        }
+    ' "$MAP_FILE" >"$tmp_map"
+    mv "$tmp_map" "$MAP_FILE"
+    return 0
 }
 
 cmd_list() {
@@ -428,6 +499,8 @@ cmd_restore() {
     local input="${1:-}"
     local tmp_plain
     local restored=0
+    local map_added=0
+    local account_template resolved_account
     [[ -n "$input" ]] || {
         usage
         exit 1
@@ -442,18 +515,22 @@ cmd_restore() {
 
     decrypt_file "$input" "$tmp_plain" KEYCHAIN_BACKUP_PASSPHRASE
 
-    while IFS=$'\t' read -r _collection env_var service account value_b64; do
-        [[ -z "$env_var" || -z "$service" || -z "$account" || -z "$value_b64" ]] && continue
+    while IFS=$'\t' read -r collection env_var service account value_b64; do
+        [[ -z "$collection" || -z "$env_var" || -z "$service" || -z "$account" || -z "$value_b64" ]] && continue
         value="$(printf '%s' "$value_b64" | base64 -d 2>/dev/null || printf '%s' "$value_b64" | base64 -D 2>/dev/null || true)"
         [[ -z "$value" ]] && continue
 
-        secret_set "$service" "$account" "$value"
+        account_template="$(normalize_account_template "$account")"
+        resolved_account="$(resolve_account "$account_template")"
+
+        secret_set "$service" "$resolved_account" "$value"
+        ensure_map_entry "$collection" "$env_var" "$service" "$account_template" "" && map_added=$((map_added + 1))
         restored=$((restored + 1))
     done <"$tmp_plain"
 
     rm -f "$tmp_plain"
     trap - EXIT
-    echo "Restored entries: $restored"
+    echo "Restored entries: $restored (map entries added: $map_added)"
 }
 
 main() {
@@ -466,27 +543,28 @@ main() {
     }
 
     require_cmd jq
+    [[ "$cmd" == "restore" ]] && ensure_map_file
     require_map
     detect_backend
     require_backend
 
     case "$cmd" in
-        list) cmd_list "$@" ;;
-        doctor) cmd_doctor "$@" ;;
-        env) cmd_env "$@" ;;
-        set) cmd_set "$@" ;;
-        get) cmd_get "$@" ;;
-        delete) cmd_delete "$@" ;;
-        backup) cmd_backup "$@" ;;
-        restore) cmd_restore "$@" ;;
-        "" | -h | --help | help)
-            usage
-            ;;
-        *)
-            echo "Unknown command: $cmd" >&2
-            usage
-            exit 1
-            ;;
+    list) cmd_list "$@" ;;
+    doctor) cmd_doctor "$@" ;;
+    env) cmd_env "$@" ;;
+    set) cmd_set "$@" ;;
+    get) cmd_get "$@" ;;
+    delete) cmd_delete "$@" ;;
+    backup) cmd_backup "$@" ;;
+    restore) cmd_restore "$@" ;;
+    "" | -h | --help | help)
+        usage
+        ;;
+    *)
+        echo "Unknown command: $cmd" >&2
+        usage
+        exit 1
+        ;;
     esac
 }
 
