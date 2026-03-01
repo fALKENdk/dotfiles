@@ -5,6 +5,9 @@ set -euo pipefail
 # 1) install packages
 # 2) create/update symlinks
 # 3) apply macOS defaults unless skipped
+#
+# Uses manual DOTFILES_DIR instead of lib/init.sh because this script runs
+# before symlinks exist (it creates them).
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$DOTFILES_DIR/scripts/lib/platform.sh"
 PLATFORM="$(detect_platform)"
@@ -53,7 +56,7 @@ else
 fi
 
 echo "==> Seeding local config"
-"$DOTFILES_DIR/scripts/local-config.sh" init
+"$DOTFILES_DIR/scripts/local.sh" init
 
 echo "==> Creating symlinks"
 "$DOTFILES_DIR/scripts/symlinks.sh"

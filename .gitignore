@@ -12,7 +12,7 @@
 **/.python_history
 **/.lesshst
 
-# Machine-specific local config (backed up via local-config)
+# Machine-specific local config (backed up via dotfiles-local)
 local/
 
 # Secrets and credentials (never commit)

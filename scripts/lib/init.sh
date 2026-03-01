@@ -26,6 +26,7 @@ _resolve_script_dir() {
 
 SCRIPT_DIR="$(_resolve_script_dir "${BASH_SOURCE[1]}")"
 DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DOTFILES_TIMESTAMP="${DOTFILES_TIMESTAMP:-$(date +%Y%m%d-%H%M%S)}"
 unset -f _resolve_script_dir
 
 source "$DOTFILES_DIR/scripts/lib/platform.sh"

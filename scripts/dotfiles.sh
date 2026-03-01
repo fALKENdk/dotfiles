@@ -16,6 +16,7 @@ Usage: dotfiles <command> [args...]
   local       Manage machine-specific local/ config
   ssh         Manage SSH key backups
   backup      Run all backups (local config, secrets, SSH keys)
+  restore     Restore from encrypted backups
   audit       Health check (timing, permissions, secrets, lint)
 
 Run 'dotfiles <command> help' for subcommand details.
@@ -26,16 +27,17 @@ cmd="${1:-help}"
 shift || true
 
 case "$cmd" in
-    _completions) echo "install packages symlinks macos secrets local ssh backup audit help" ;;
+    _completions) echo "install packages symlinks macos secrets local ssh backup restore audit help" ;;
     install) exec "$DOTFILES_DIR/scripts/install.sh" "$@" ;;
     packages) exec "$DOTFILES_DIR/scripts/packages.sh" "$@" ;;
     symlinks) exec "$DOTFILES_DIR/scripts/symlinks.sh" "$@" ;;
     macos) exec "$DOTFILES_DIR/scripts/macos.sh" "$@" ;;
     audit) exec "$DOTFILES_DIR/scripts/audit.sh" "$@" ;;
-    secrets) exec "$DOTFILES_DIR/scripts/keychain-secrets.sh" "$@" ;;
-    ssh) exec "$DOTFILES_DIR/scripts/ssh-keys-backup.sh" "$@" ;;
-    local) exec "$DOTFILES_DIR/scripts/local-config.sh" "$@" ;;
+    secrets) exec "$DOTFILES_DIR/scripts/secrets.sh" "$@" ;;
+    ssh) exec "$DOTFILES_DIR/scripts/ssh.sh" "$@" ;;
+    local) exec "$DOTFILES_DIR/scripts/local.sh" "$@" ;;
     backup) exec "$DOTFILES_DIR/scripts/backup.sh" "$@" ;;
+    restore) exec "$DOTFILES_DIR/scripts/restore.sh" "$@" ;;
     help | -h | --help) usage ;;
     *)
         echo "Unknown command: $cmd" >&2

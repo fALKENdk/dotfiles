@@ -2,6 +2,9 @@
 set -euo pipefail
 
 # Link managed dotfiles and helper commands.
+#
+# Uses manual DOTFILES_DIR instead of lib/init.sh because this script
+# creates the symlinks that lib/init.sh relies on.
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$DOTFILES_DIR/scripts/lib/platform.sh"
 source "$DOTFILES_DIR/scripts/lib/linker.sh"
@@ -57,8 +60,8 @@ esac
 # --- CLI tools ---
 link_command "$DOTFILES_DIR/scripts/dotfiles.sh" "dotfiles"
 link_command "$DOTFILES_DIR/scripts/backup.sh" "dotfiles-backup"
-link_command "$DOTFILES_DIR/scripts/keychain-secrets.sh" "keychain-secrets"
-link_command "$DOTFILES_DIR/scripts/ssh-keys-backup.sh" "ssh-keys-backup"
-link_command "$DOTFILES_DIR/scripts/local-config.sh" "local-config"
+link_command "$DOTFILES_DIR/scripts/secrets.sh" "dotfiles-secrets"
+link_command "$DOTFILES_DIR/scripts/ssh.sh" "dotfiles-ssh"
+link_command "$DOTFILES_DIR/scripts/local.sh" "dotfiles-local"
 
 echo "Symlink setup complete."

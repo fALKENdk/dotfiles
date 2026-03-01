@@ -35,9 +35,16 @@ DOTFILES_ALLOW_REMOTE_INSTALLERS=0 ~/.dotfiles/scripts/install.sh
 After bootstrap, restore private backups (if available):
 
 ```bash
-local-config restore ~/local-config.enc
-ssh-keys-backup restore ~/ssh-keys.enc
+dotfiles restore ~/backups/dotfiles
 ```
+
+## Prerequisites
+
+Packages are installed automatically via `brew bundle` from the `Brewfile`. Key dependencies:
+
+- **Required**: `git`, `jq`, `openssl`, `tar`
+- **Recommended**: `fd`, `rg` (ripgrep), `shellcheck`, `shfmt`, `tree`
+- **Secrets**: macOS `security` (built-in) or `pass` (Linux)
 
 ## Commands
 
@@ -48,20 +55,34 @@ dotfiles
 dotfiles <command> help
 ```
 
-Standalone commands also work:
+Standalone commands:
 
 - `dotfiles-backup`
-- `local-config`
-- `keychain-secrets`
-- `ssh-keys-backup`
+- `dotfiles-secrets`
+- `dotfiles-ssh`
+- `dotfiles-local`
+
+## Backup and Restore
+
+All encrypted backups use a single passphrase (`DOTFILES_BACKUP_PASSPHRASE`).
 
 One-shot backup:
 
 ```bash
 dotfiles backup
 dotfiles backup ~/backups/dotfiles
-DOTFILES_BACKUP_DIR=~/backups/dotfiles dotfiles backup
+DOTFILES_BACKUP_PASSPHRASE='...' dotfiles backup ~/backups/dotfiles
 ```
+
+One-shot restore:
+
+```bash
+dotfiles restore ~/backups/dotfiles
+dotfiles restore --local ~/local.enc --ssh ~/ssh.enc
+DOTFILES_BACKUP_PASSPHRASE='...' dotfiles restore ~/backups/dotfiles
+```
+
+When run interactively, `backup` and `restore` prompt once for the passphrase and reuse it for all three modules.
 
 ## Home Directory Policy
 
@@ -91,8 +112,8 @@ Machine-specific files live in `local/` (gitignored). Templates live in `local.e
 Seed local files:
 
 ```bash
-local-config init
-local-config list
+dotfiles-local init
+dotfiles-local list
 ```
 
 Expected local files:
@@ -105,19 +126,19 @@ Expected local files:
 Encrypted backup/restore:
 
 ```bash
-local-config backup ~/local-config.enc
-local-config restore ~/local-config.enc
+dotfiles-local backup ~/local.enc
+dotfiles-local restore ~/local.enc
 
 # Non-interactive
-LOCAL_CONFIG_PASSPHRASE='strong-passphrase' local-config backup ~/local-config.enc
-LOCAL_CONFIG_RESTORE_OVERWRITE=1 local-config restore ~/local-config.enc
+DOTFILES_BACKUP_PASSPHRASE='strong-passphrase' dotfiles-local backup ~/local.enc
+DOTFILES_LOCAL_RESTORE_OVERWRITE=1 dotfiles-local restore ~/local.enc
 ```
 
 ## Secrets and npm Credentials
 
 npm credentials are never stored in tracked files.
 
-- `keychain-secrets env development` exports secrets into shell env
+- `dotfiles-secrets env` exports secrets into shell env
 - `npm/.npmrc` references those environment variables
 - Secret mappings live in `local/secrets/secrets-map.json`
 
@@ -125,28 +146,27 @@ Backends:
 
 - macOS: `security` (Keychain)
 - Linux: `pass` (Password Store)
-- Override: `KEYCHAIN_SECRETS_BACKEND=security|pass`
+- Override: `DOTFILES_SECRETS_BACKEND=security|pass`
 
 Common commands:
 
 ```bash
-keychain-secrets list
-keychain-secrets doctor
-keychain-secrets set AZURE_NPM_USERNAME "your-username"
-keychain-secrets set AZURE_NPM_PASSWORD_B64 "base64-token"
-keychain-secrets set AZURE_NPM_EMAIL "you@example.com"
+dotfiles-secrets list
+dotfiles-secrets doctor
+dotfiles-secrets set AZURE_NPM_USERNAME "your-username"
+dotfiles-secrets set AZURE_NPM_PASSWORD_B64 "base64-token"
+dotfiles-secrets set AZURE_NPM_EMAIL "you@example.com"
 ```
 
 Encrypted backup/restore:
 
 ```bash
-keychain-secrets backup all ~/keychain-all.enc
-keychain-secrets restore ~/keychain-all.enc
+dotfiles-secrets backup ~/secrets.enc
+dotfiles-secrets restore ~/secrets.enc
 
 # Non-interactive
-export KEYCHAIN_BACKUP_PASSPHRASE='choose-a-strong-passphrase'
-keychain-secrets backup development ~/keychain-dev.enc
-keychain-secrets restore ~/keychain-dev.enc
+DOTFILES_BACKUP_PASSPHRASE='choose-a-strong-passphrase' dotfiles-secrets backup ~/secrets.enc
+dotfiles-secrets restore ~/secrets.enc
 ```
 
 Linux `pass` one-time setup:
@@ -156,16 +176,38 @@ gpg --full-generate-key
 pass init "<your-gpg-key-id-or-email>"
 ```
 
+### Secrets Map Format
+
+The mapping at `local/secrets/secrets-map.json` defines which environment variables correspond to which backend entries:
+
+```json
+{
+  "entries": [
+    {
+      "env_var": "AZURE_NPM_USERNAME",
+      "service": "azure-npm",
+      "account": "__USER__",
+      "note": "Azure DevOps NPM feed username"
+    }
+  ]
+}
+```
+
+- `env_var` — exported shell variable name (must be a valid identifier)
+- `service` — backend service/item name (Keychain service or pass path component)
+- `account` — account name; use `"__USER__"` or `""` to resolve to the current OS user at runtime
+- `note` — optional human-readable description
+
 ## SSH Key Backup
 
 ```bash
-ssh-keys-backup list
-ssh-keys-backup backup ~/ssh-keys.enc
-ssh-keys-backup restore ~/ssh-keys.enc
+dotfiles-ssh list
+dotfiles-ssh backup ~/ssh.enc
+dotfiles-ssh restore ~/ssh.enc
 
 # Non-interactive / overwrite restore
-export SSH_KEYS_BACKUP_PASSPHRASE='choose-a-strong-passphrase'
-SSH_KEYS_RESTORE_OVERWRITE=1 ssh-keys-backup restore ~/ssh-keys.enc
+DOTFILES_BACKUP_PASSPHRASE='choose-a-strong-passphrase' dotfiles-ssh backup ~/ssh.enc
+DOTFILES_SSH_RESTORE_OVERWRITE=1 dotfiles-ssh restore ~/ssh.enc
 ```
 
 ## Package Installation
@@ -181,4 +223,4 @@ Cursor is installed through the official installer (unless disabled by `DOTFILES
 - Personal identity and secret mappings live in `local/` (gitignored)
 - Secrets are stored in Keychain/`pass`, not in git
 - Run `./scripts/audit.sh` before commits
-
+- On macOS, `security add-generic-password -w` passes the secret value as a CLI argument, which is briefly visible in the process list. This is a known limitation of the macOS `security` command.

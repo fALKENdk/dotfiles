@@ -3,6 +3,9 @@ set -euo pipefail
 
 # Apply opinionated macOS system defaults (Finder, Dock, keyboard).
 # Idempotent — safe to re-run. Restarts Finder and Dock to apply changes.
+#
+# Intentionally standalone (no lib/init.sh) — called by install.sh and
+# dotfiles.sh, does not need DOTFILES_DIR or symlink resolution.
 
 if [[ "${OSTYPE:-}" != darwin* ]]; then
     echo "macos.sh only runs on macOS."

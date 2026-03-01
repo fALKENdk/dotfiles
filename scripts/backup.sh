@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Run all encrypted backup tasks in one command.
-# Creates local-config, keychain-secrets(all), and SSH key backups in one folder.
+# Creates local, secrets, and SSH key backups in one folder.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 
 usage() {
@@ -19,16 +19,13 @@ Examples:
 Notes:
   - output_dir defaults to DOTFILES_BACKUP_DIR, then to $HOME
   - file names include a shared timestamp so all artifacts match
-  - passphrases can still be provided non-interactively via:
-      LOCAL_CONFIG_PASSPHRASE
-      KEYCHAIN_BACKUP_PASSPHRASE
-      SSH_KEYS_BACKUP_PASSPHRASE
+  - set DOTFILES_BACKUP_PASSPHRASE for non-interactive backup
 EOF
 }
 
 main() {
     local output_dir="${1:-${DOTFILES_BACKUP_DIR:-$HOME}}"
-    local timestamp="${DOTFILES_BACKUP_TIMESTAMP:-$(date +%Y%m%d-%H%M%S)}"
+    local timestamp="$DOTFILES_TIMESTAMP"
     local local_backup
     local secrets_backup
     local ssh_backup
@@ -43,17 +40,23 @@ main() {
         exit 1
     fi
 
+    if [[ -z "${DOTFILES_BACKUP_PASSPHRASE:-}" ]]; then
+        read -rsp "Enter backup passphrase: " DOTFILES_BACKUP_PASSPHRASE
+        echo
+        export DOTFILES_BACKUP_PASSPHRASE
+    fi
+
     mkdir -p "$output_dir"
     output_dir="$(cd "$output_dir" && pwd)"
 
-    local_backup="$output_dir/local-config-$timestamp.enc"
-    secrets_backup="$output_dir/keychain-all-$timestamp.enc"
-    ssh_backup="$output_dir/ssh-keys-$timestamp.enc"
+    local_backup="$output_dir/local-$timestamp.enc"
+    secrets_backup="$output_dir/secrets-$timestamp.enc"
+    ssh_backup="$output_dir/ssh-$timestamp.enc"
 
     echo "Writing backups to: $output_dir"
-    "$DOTFILES_DIR/scripts/local-config.sh" backup "$local_backup"
-    "$DOTFILES_DIR/scripts/keychain-secrets.sh" backup all "$secrets_backup"
-    "$DOTFILES_DIR/scripts/ssh-keys-backup.sh" backup "$ssh_backup"
+    "$DOTFILES_DIR/scripts/local.sh" backup "$local_backup"
+    "$DOTFILES_DIR/scripts/secrets.sh" backup "$secrets_backup"
+    "$DOTFILES_DIR/scripts/ssh.sh" backup "$ssh_backup"
 
     echo "All backups complete:"
     echo "  - $local_backup"

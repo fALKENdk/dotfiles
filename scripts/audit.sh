@@ -3,6 +3,9 @@ set -euo pipefail
 
 # Quick health check: shell startup time, SSH permissions, secret-leak scan, lint, git status.
 # Run after editing dotfiles or before committing.
+#
+# Uses manual DOTFILES_DIR instead of lib/init.sh — standalone by design so it
+# works even before symlinks are created.
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "==> Shell startup timing (aim for <200ms)"
@@ -25,7 +28,7 @@ rg -n -i --hidden \
     --glob '!local/**' \
     --glob '!local.example/**' \
     --glob '!scripts/audit.sh' \
-    --glob '!scripts/keychain-secrets.sh' \
+    --glob '!scripts/secrets.sh' \
     --glob '!README.md' \
     '(password|_password|token|api[_-]?key|secret)' "$DOTFILES_DIR" || true
 

@@ -1,4 +1,4 @@
-#compdef dotfiles dotfiles-backup keychain-secrets local-config ssh-keys-backup
+#compdef dotfiles dotfiles-backup dotfiles-secrets dotfiles-local dotfiles-ssh
 
 _dotfiles() {
     case "$service" in
@@ -7,10 +7,10 @@ _dotfiles() {
                 2) compadd ${=:-$(dotfiles _completions 2>/dev/null)} ;;
                 3)
                     case "${words[2]}" in
-                        secrets) compadd ${=:-$(keychain-secrets _completions 2>/dev/null)} ;;
-                        local) compadd ${=:-$(local-config _completions 2>/dev/null)} ;;
-                        ssh) compadd ${=:-$(ssh-keys-backup _completions 2>/dev/null)} ;;
-                        backup) _files ;;
+                        secrets) compadd ${=:-$(dotfiles-secrets _completions 2>/dev/null)} ;;
+                        local) compadd ${=:-$(dotfiles-local _completions 2>/dev/null)} ;;
+                        ssh) compadd ${=:-$(dotfiles-ssh _completions 2>/dev/null)} ;;
+                        backup | restore) _files ;;
                     esac
                     ;;
                 *) _files ;;
@@ -19,23 +19,23 @@ _dotfiles() {
         dotfiles-backup)
             _files
             ;;
-        keychain-secrets)
+        dotfiles-secrets)
             if (( CURRENT == 2 )); then
-                compadd ${=:-$(keychain-secrets _completions 2>/dev/null)}
+                compadd ${=:-$(dotfiles-secrets _completions 2>/dev/null)}
             else
                 _files
             fi
             ;;
-        local-config)
+        dotfiles-local)
             if (( CURRENT == 2 )); then
-                compadd ${=:-$(local-config _completions 2>/dev/null)}
+                compadd ${=:-$(dotfiles-local _completions 2>/dev/null)}
             else
                 _files
             fi
             ;;
-        ssh-keys-backup)
+        dotfiles-ssh)
             if (( CURRENT == 2 )); then
-                compadd ${=:-$(ssh-keys-backup _completions 2>/dev/null)}
+                compadd ${=:-$(dotfiles-ssh _completions 2>/dev/null)}
             else
                 _files
             fi

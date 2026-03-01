@@ -5,6 +5,7 @@ set -euo pipefail
 # Seed from templates, list contents, and encrypted backup/restore.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
+source "$DOTFILES_DIR/scripts/lib/restore.sh"
 
 LOCAL_DIR="$DOTFILES_DIR/local"
 EXAMPLE_DIR="$DOTFILES_DIR/local.example"
@@ -24,17 +25,17 @@ list_relative_files() {
 usage() {
     cat <<'EOF'
 Usage:
-  local-config init
-  local-config list
-  local-config backup [output.enc]
-  local-config restore <input.enc>
+  dotfiles-local init
+  dotfiles-local list
+  dotfiles-local backup [output.enc]
+  dotfiles-local restore <input.enc>
 
 Examples:
-  local-config init
-  local-config backup ~/local-config.enc
-  LOCAL_CONFIG_PASSPHRASE='strong-passphrase' local-config backup ~/local-config.enc
-  local-config restore ~/local-config.enc
-  LOCAL_CONFIG_RESTORE_OVERWRITE=1 local-config restore ~/local-config.enc
+  dotfiles-local init
+  dotfiles-local backup ~/local.enc
+  DOTFILES_BACKUP_PASSPHRASE='strong-passphrase' dotfiles-local backup ~/local.enc
+  dotfiles-local restore ~/local.enc
+  DOTFILES_LOCAL_RESTORE_OVERWRITE=1 dotfiles-local restore ~/local.enc
 
 Notes:
   - local/ holds machine-specific config (git identities, npm registries, secrets map)
@@ -80,13 +81,13 @@ cmd_list() {
 }
 
 cmd_backup() {
-    local output="${1:-$HOME/local-config-$(date +%Y%m%d-%H%M%S).enc}"
+    local output="${1:-$HOME/local-$DOTFILES_TIMESTAMP.enc}"
     local tmp_tar
 
     require_cmd tar
 
     if [[ ! -d "$LOCAL_DIR" ]]; then
-        echo "No local config to back up. Run 'local-config init' first." >&2
+        echo "No local config to back up. Run 'dotfiles-local init' first." >&2
         exit 1
     fi
 
@@ -94,7 +95,7 @@ cmd_backup() {
     trap 'rm -f "$tmp_tar"' EXIT
     tar -cf "$tmp_tar" -C "$DOTFILES_DIR" local
 
-    encrypt_file "$tmp_tar" "$output" LOCAL_CONFIG_PASSPHRASE
+    encrypt_file "$tmp_tar" "$output" DOTFILES_BACKUP_PASSPHRASE
 
     chmod 600 "$output"
     rm -f "$tmp_tar"
@@ -105,7 +106,7 @@ cmd_backup() {
 cmd_restore() {
     local input="${1:-}"
     local tmp_tar extract_dir
-    local overwrite="${LOCAL_CONFIG_RESTORE_OVERWRITE:-0}"
+    local overwrite="${DOTFILES_LOCAL_RESTORE_OVERWRITE:-0}"
 
     require_cmd tar
 
@@ -121,7 +122,7 @@ cmd_restore() {
     tmp_tar="$(mktemp)"
     trap 'rm -f "${tmp_tar:-}"; rm -rf "${extract_dir:-}"' EXIT
 
-    decrypt_file "$input" "$tmp_tar" LOCAL_CONFIG_PASSPHRASE
+    decrypt_file "$input" "$tmp_tar" DOTFILES_BACKUP_PASSPHRASE
 
     extract_dir="$(mktemp -d)"
     tar -xf "$tmp_tar" -C "$extract_dir"
@@ -133,19 +134,12 @@ cmd_restore() {
         exit 1
     fi
 
-    local conflicts=()
+    local files=()
     while IFS= read -r f; do
-        if [[ -e "$LOCAL_DIR/$f" && "$overwrite" != "1" ]]; then
-            conflicts+=("$f")
-        fi
+        files+=("$f")
     done < <(list_relative_files "$extract_dir/local")
 
-    if [[ "${#conflicts[@]}" -gt 0 ]]; then
-        echo "Restore aborted. Existing files would be overwritten:" >&2
-        for f in "${conflicts[@]}"; do
-            echo "  - local/$f" >&2
-        done
-        echo "Set LOCAL_CONFIG_RESTORE_OVERWRITE=1 to overwrite." >&2
+    if ! check_restore_conflicts "$overwrite" "$LOCAL_DIR" "DOTFILES_LOCAL_RESTORE_OVERWRITE" "${files[@]}"; then
         rm -rf "$extract_dir"
         exit 1
     fi

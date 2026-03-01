@@ -4,20 +4,21 @@ set -euo pipefail
 # Encrypted backup/restore helper for SSH key material.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
+source "$DOTFILES_DIR/scripts/lib/restore.sh"
 
 usage() {
     cat <<'EOF'
 Usage:
-  ssh-keys-backup list [ssh_dir]
-  ssh-keys-backup backup [output.enc] [ssh_dir]
-  ssh-keys-backup restore <input.enc> [ssh_dir]
+  dotfiles-ssh list [ssh_dir]
+  dotfiles-ssh backup [output.enc] [ssh_dir]
+  dotfiles-ssh restore <input.enc> [ssh_dir]
 
 Examples:
-  ssh-keys-backup list
-  ssh-keys-backup backup ~/ssh-keys.enc
-  SSH_KEYS_BACKUP_PASSPHRASE='strong-passphrase' ssh-keys-backup backup ~/ssh-keys.enc
-  ssh-keys-backup restore ~/ssh-keys.enc
-  SSH_KEYS_RESTORE_OVERWRITE=1 ssh-keys-backup restore ~/ssh-keys.enc
+  dotfiles-ssh list
+  dotfiles-ssh backup ~/ssh-keys.enc
+  DOTFILES_BACKUP_PASSPHRASE='strong-passphrase' dotfiles-ssh backup ~/ssh-keys.enc
+  dotfiles-ssh restore ~/ssh-keys.enc
+  DOTFILES_SSH_RESTORE_OVERWRITE=1 dotfiles-ssh restore ~/ssh-keys.enc
 
 Notes:
   - Source/target ssh_dir defaults to ~/.ssh
@@ -85,7 +86,7 @@ cmd_list() {
 
 cmd_backup() {
     # Stage selected files and encrypt as a portable backup artifact.
-    local output="${1:-$HOME/ssh-keys-$(date +%Y%m%d-%H%M%S).enc}"
+    local output="${1:-$HOME/ssh-$DOTFILES_TIMESTAMP.enc}"
     local ssh_dir="${2:-$HOME/.ssh}"
     local files=()
     local tmp_dir stage_dir tar_file manifest_file
@@ -123,7 +124,7 @@ cmd_backup() {
 
     tar -cf "$tar_file" -C "$tmp_dir" ssh
 
-    encrypt_file "$tar_file" "$output" SSH_KEYS_BACKUP_PASSPHRASE
+    encrypt_file "$tar_file" "$output" DOTFILES_BACKUP_PASSPHRASE
 
     chmod 600 "$output"
     rm -rf "$tmp_dir"
@@ -138,10 +139,9 @@ cmd_restore() {
     local input="${1:-}"
     local ssh_dir="${2:-$HOME/.ssh}"
     local tmp_dir tar_file extract_dir
-    local overwrite="${SSH_KEYS_RESTORE_OVERWRITE:-0}"
+    local overwrite="${DOTFILES_SSH_RESTORE_OVERWRITE:-0}"
     local file
     local entries=()
-    local conflicts=()
 
     require_cmd tar
 
@@ -159,7 +159,7 @@ cmd_restore() {
     tar_file="$tmp_dir/ssh-keys.tar"
     extract_dir="$tmp_dir/extract"
 
-    decrypt_file "$input" "$tar_file" SSH_KEYS_BACKUP_PASSPHRASE
+    decrypt_file "$input" "$tar_file" DOTFILES_BACKUP_PASSPHRASE
 
     while IFS= read -r file; do
         entries+=("$file")
@@ -184,20 +184,14 @@ cmd_restore() {
     mkdir -p "$ssh_dir"
     chmod 700 "$ssh_dir"
 
+    local restore_files=()
     while IFS= read -r file; do
         [[ "$file" == "MANIFEST.txt" ]] && continue
         [[ -f "$extract_dir/ssh/$file" ]] || continue
-        if [[ -e "$ssh_dir/$file" && "$overwrite" != "1" ]]; then
-            conflicts+=("$file")
-        fi
+        restore_files+=("$file")
     done < <(ls -1 "$extract_dir/ssh")
 
-    if [[ "${#conflicts[@]}" -gt 0 ]]; then
-        echo "Restore aborted. Existing files would be overwritten:" >&2
-        for file in "${conflicts[@]}"; do
-            echo "  - $ssh_dir/$file" >&2
-        done
-        echo "Set SSH_KEYS_RESTORE_OVERWRITE=1 to overwrite." >&2
+    if ! check_restore_conflicts "$overwrite" "$ssh_dir" "DOTFILES_SSH_RESTORE_OVERWRITE" "${restore_files[@]}"; then
         rm -rf "$tmp_dir"
         exit 1
     fi

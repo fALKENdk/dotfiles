@@ -4,7 +4,7 @@ set -euo pipefail
 # Shared encrypt/decrypt helpers wrapping openssl AES-256-CBC + PBKDF2.
 #
 # @uses require_cmd from lib/platform.sh
-# @see keychain-secrets.sh, local-config.sh, ssh-keys-backup.sh
+# @see secrets.sh, local.sh, ssh.sh
 
 # Encrypt a file with AES-256-CBC + PBKDF2.
 # Prompts for passphrase interactively unless $passphrase_var is set.
@@ -36,10 +36,10 @@ decrypt_file() {
 
     require_cmd openssl
     if [[ -n "$passphrase_var" && -n "${!passphrase_var:-}" ]]; then
-        openssl enc -d -aes-256-cbc -pbkdf2 \
+        openssl enc -d -aes-256-cbc -pbkdf2 -salt \
             -pass "env:$passphrase_var" \
             -in "$input" -out "$output"
     else
-        openssl enc -d -aes-256-cbc -pbkdf2 -in "$input" -out "$output"
+        openssl enc -d -aes-256-cbc -pbkdf2 -salt -in "$input" -out "$output"
     fi
 }

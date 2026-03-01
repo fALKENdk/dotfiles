@@ -6,7 +6,7 @@ set -euo pipefail
 # @global DOTFILES_DIR - used to identify managed symlinks
 # @global BACKUP_DIR   - where displaced files are moved (auto-timestamped)
 
-BACKUP_DIR="${BACKUP_DIR:-$HOME/.dotfiles-backups/$(date +%Y%m%d-%H%M%S)}"
+BACKUP_DIR="${BACKUP_DIR:-$HOME/.dotfiles-backups/${DOTFILES_TIMESTAMP:-$(date +%Y%m%d-%H%M%S)}}"
 
 # Remove a managed symlink or back up a real file before it gets replaced.
 # Managed symlinks (pointing into $DOTFILES_DIR) are removed silently.
