@@ -9,6 +9,18 @@ source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 LOCAL_DIR="$DOTFILES_DIR/local"
 EXAMPLE_DIR="$DOTFILES_DIR/local.example"
 
+list_relative_files() {
+    local base_dir="$1"
+    if command -v fd >/dev/null 2>&1; then
+        fd -t f -HI --base-directory "$base_dir"
+    else
+        (
+            cd "$base_dir"
+            find . -type f -print | sed 's|^\./||'
+        )
+    fi
+}
+
 usage() {
     cat <<'EOF'
 Usage:
@@ -53,7 +65,7 @@ cmd_init() {
             echo "  seeded: $rel_path"
             seeded=$((seeded + 1))
         fi
-    done < <(fd -t f -HI --base-directory "$EXAMPLE_DIR")
+    done < <(list_relative_files "$EXAMPLE_DIR")
 
     echo "Seeded $seeded file(s), skipped $skipped existing."
 }
@@ -126,7 +138,7 @@ cmd_restore() {
         if [[ -e "$LOCAL_DIR/$f" && "$overwrite" != "1" ]]; then
             conflicts+=("$f")
         fi
-    done < <(fd -t f -HI --base-directory "$extract_dir/local")
+    done < <(list_relative_files "$extract_dir/local")
 
     if [[ "${#conflicts[@]}" -gt 0 ]]; then
         echo "Restore aborted. Existing files would be overwritten:" >&2
@@ -142,7 +154,7 @@ cmd_restore() {
     while IFS= read -r f; do
         mkdir -p "$(dirname "$LOCAL_DIR/$f")"
         cp -p "$extract_dir/local/$f" "$LOCAL_DIR/$f"
-    done < <(fd -t f -HI --base-directory "$extract_dir/local")
+    done < <(list_relative_files "$extract_dir/local")
 
     rm -rf "$extract_dir"
     trap - EXIT
