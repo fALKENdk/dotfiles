@@ -15,6 +15,9 @@
 # Machine-specific local config (backed up via dotfiles-local)
 local/
 
+# Encrypted backups (managed by dotfiles backup/restore)
+backups/
+
 # Secrets and credentials (never commit)
 **/.ssh/id_*
 **/.ssh/*_key

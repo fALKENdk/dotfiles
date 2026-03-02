@@ -6,13 +6,13 @@ set -euo pipefail
 # On a new Mac with nothing installed, run:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/fALKENdk/dotfiles/main/scripts/bootstrap.sh)
 #
-# Handles: Xcode CLT -> git clone -> install.sh
+# Handles: Xcode Command Line Tools -> git clone -> install.sh
 # Safe to re-run — every step is idempotent.
 
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/fALKENdk/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
-ensure_xcode_clt() {
+ensure_xcode_command_line_tools() {
     if xcode-select -p &>/dev/null; then
         echo "Xcode Command Line Tools: already installed."
         return 0
@@ -27,7 +27,7 @@ ensure_xcode_clt() {
         sleep 5
         waited=$((waited + 5))
         if [[ "$waited" -ge 900 ]]; then
-            echo "Timed out after 15 minutes waiting for Xcode CLT." >&2
+            echo "Timed out after 15 minutes waiting for Xcode Command Line Tools." >&2
             exit 1
         fi
     done
@@ -45,7 +45,7 @@ clone_dotfiles() {
 }
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    ensure_xcode_clt
+    ensure_xcode_command_line_tools
 fi
 
 clone_dotfiles

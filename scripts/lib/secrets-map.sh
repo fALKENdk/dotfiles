@@ -104,7 +104,7 @@ ensure_map_entry() {
     local label="$2"
     local owner_template="$3"
     local note="${4:-}"
-    local tmp_map
+    local temp_map
 
     if jq -e \
         --arg env_var "$env_var" \
@@ -117,7 +117,7 @@ ensure_map_entry() {
         return 1
     fi
 
-    tmp_map="$(mktemp)"
+    temp_map="$(mktemp)"
     if ! jq \
         --arg env_var "$env_var" \
         --arg entry_label "$label" \
@@ -136,11 +136,11 @@ ensure_map_entry() {
                 }]
             )
         }
-    ' "$SECRETS_MAP_FILE" >"$tmp_map"; then
-        rm -f "$tmp_map"
+    ' "$SECRETS_MAP_FILE" >"$temp_map"; then
+        rm -f "$temp_map"
         echo "Failed to update map file." >&2
         return 1
     fi
-    mv "$tmp_map" "$SECRETS_MAP_FILE"
+    mv "$temp_map" "$SECRETS_MAP_FILE"
     return 0
 }

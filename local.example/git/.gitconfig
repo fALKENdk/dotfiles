@@ -1,0 +1,13 @@
+[core]
+    autocrlf = input
+    excludesfile = ~/.gitignore_global
+
+[init]
+    defaultBranch = main
+
+[push]
+    autoSetupRemote = true
+
+[fetch]
+    prune = true
+    pruneTags = true

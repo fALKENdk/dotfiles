@@ -10,6 +10,7 @@ _dotfiles() {
                         secrets) compadd ${=:-$(dotfiles-secrets _completions 2>/dev/null)} ;;
                         local) compadd ${=:-$(dotfiles-local _completions 2>/dev/null)} ;;
                         ssh) compadd ${=:-$(dotfiles-ssh _completions 2>/dev/null)} ;;
+                        install) compadd -- --skip-macos --restore ;;
                         backup | restore) _files ;;
                     esac
                     ;;
@@ -29,6 +30,9 @@ _dotfiles() {
         dotfiles-local)
             if (( CURRENT == 2 )); then
                 compadd ${=:-$(dotfiles-local _completions 2>/dev/null)}
+            elif [[ "${words[2]}" == "restore" ]]; then
+                compadd -- --overwrite
+                _files
             else
                 _files
             fi
@@ -36,6 +40,9 @@ _dotfiles() {
         dotfiles-ssh)
             if (( CURRENT == 2 )); then
                 compadd ${=:-$(dotfiles-ssh _completions 2>/dev/null)}
+            elif [[ "${words[2]}" == "restore" ]]; then
+                compadd -- --overwrite
+                _files
             else
                 _files
             fi

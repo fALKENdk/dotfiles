@@ -3,16 +3,16 @@ set -euo pipefail
 
 detect_platform() {
     case "$(uname -s)" in
-        Darwin) echo "macos" ;;
-        Linux) echo "linux" ;;
-        *)
-            echo "Unsupported platform: $(uname -s)" >&2
-            return 1
-            ;;
+    Darwin) echo "macos" ;;
+    Linux) echo "linux" ;;
+    *)
+        echo "Unsupported platform: $(uname -s)" >&2
+        return 1
+        ;;
     esac
 }
 
-require_cmd() {
+require_command() {
     local command_name="$1"
     if ! command -v "$command_name" >/dev/null 2>&1; then
         echo "Missing required command: $command_name" >&2

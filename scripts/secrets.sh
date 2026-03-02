@@ -23,8 +23,8 @@ Examples:
   dotfiles-secrets list
   dotfiles-secrets doctor
   dotfiles-secrets set AZURE_NPM_USERNAME "your-username"
-  dotfiles-secrets backup ~/secrets.enc
-  dotfiles-secrets restore ~/secrets.enc
+  dotfiles-secrets backup
+  dotfiles-secrets restore backups/20260302-120000/secrets.enc
 
 Notes:
   - Mapping file: $SECRETS_MAP_FILE
@@ -38,7 +38,7 @@ Notes:
 EOF
 }
 
-cmd_list() {
+command_list() {
     local env_var label owner note resolved_owner owner_template
     {
         printf 'ENV_VAR\tLABEL\tOWNER\tOWNER_RESOLVED\tNOTE\n'
@@ -53,10 +53,10 @@ cmd_list() {
     } | render_tabular
 }
 
-cmd_doctor() {
+command_doctor() {
     local present=0
     local missing=0
-    local tmp_table
+    local temp_table
 
     _doctor_row() {
         local env_var="$1"
@@ -74,15 +74,15 @@ cmd_doctor() {
         printf '%s\t%s\t%s\n' "$state" "$env_var" "$label"
     }
 
-    tmp_table="$(mktemp)"
-    printf 'STATE\tENV_VAR\tLABEL\n' >"$tmp_table"
-    for_each_map_entry _doctor_row >>"$tmp_table"
-    render_tabular <"$tmp_table"
-    rm -f "$tmp_table"
+    temp_table="$(mktemp)"
+    printf 'STATE\tENV_VAR\tLABEL\n' >"$temp_table"
+    for_each_map_entry _doctor_row >>"$temp_table"
+    render_tabular <"$temp_table"
+    rm -f "$temp_table"
     echo "present=$present missing=$missing"
 }
 
-cmd_env() {
+command_env() {
     _env_row() {
         local env_var="$1"
         local label="$2"
@@ -113,7 +113,7 @@ resolve_entry() {
     IFS=$'\t' read -r _env_var ENTRY_LABEL ENTRY_OWNER _note <<<"$row"
 }
 
-cmd_set() {
+command_set() {
     local env_var="${1:-}"
     local value="${2:-}"
 
@@ -126,7 +126,7 @@ cmd_set() {
     echo "Stored $env_var in store '$DOTFILES_SECRETS_STORE' (label: $ENTRY_LABEL)"
 }
 
-cmd_get() {
+command_get() {
     local env_var="${1:-}"
     resolve_entry "$env_var"
     local value
@@ -138,59 +138,61 @@ cmd_get() {
     printf '%s\n' "$value"
 }
 
-cmd_delete() {
+command_delete() {
     local env_var="${1:-}"
     resolve_entry "$env_var"
     secret_delete "$ENTRY_LABEL" "$ENTRY_OWNER"
     echo "Deleted $env_var from store '$DOTFILES_SECRETS_STORE' (label: $ENTRY_LABEL)"
 }
 
-cmd_backup() {
-    local output="${1:-$HOME/secrets-$DOTFILES_TIMESTAMP.enc}"
-    local tmp_plaintext
+command_backup() {
+    local default_directory="$DOTFILES_DIR/backups/$DOTFILES_TIMESTAMP"
+    local output="${1:-$default_directory/secrets.enc}"
+    local temp_plaintext
     local written=0
 
     ensure_passphrase
-    tmp_plaintext="$(mktemp)"
-    trap 'rm -f "$tmp_plaintext"' EXIT
+    mkdir -p "$(dirname "$output")"
+    temp_plaintext="$(mktemp)"
+    trap 'rm -f "$temp_plaintext"' EXIT
 
     _backup_row() {
         local env_var="$1"
         local label="$2"
         local owner="$3"
         local _note="$4"
-        local value value_b64
+        local value value_base64
 
         value="$(secret_get "$label" "$owner")"
         if [[ -z "$value" ]]; then
             return 0
         fi
 
-        value_b64="$(printf '%s' "$value" | base64 | tr -d '\n')"
-        printf '%s\t%s\t%s\t%s\n' "$env_var" "$label" "$owner" "$value_b64" >>"$tmp_plaintext"
+        value_base64="$(printf '%s' "$value" | base64 | tr -d '\n')"
+        printf '%s\t%s\t%s\t%s\n' "$env_var" "$label" "$owner" "$value_base64" >>"$temp_plaintext"
         written=$((written + 1))
     }
 
     for_each_map_entry _backup_row
 
     if [[ "$written" -eq 0 ]]; then
-        rm -f "$tmp_plaintext"
+        rm -f "$temp_plaintext"
         echo "No secrets found to back up." >&2
         exit 1
     fi
 
-    encrypt_file "$tmp_plaintext" "$output" DOTFILES_BACKUP_PASSPHRASE
+    encrypt_file "$temp_plaintext" "$output" DOTFILES_BACKUP_PASSPHRASE
 
-    rm -f "$tmp_plaintext"
+    rm -f "$temp_plaintext"
     trap - EXIT
     echo "Backup written: $output"
 }
 
-cmd_restore() {
+command_restore() {
     local input="${1:-}"
-    local tmp_plaintext
+    local temp_plaintext
     local restored=0
-    local map_added=0
+    local map_entries_added=0
     local owner_template resolved_owner
     [[ -n "$input" ]] || {
         usage
@@ -202,27 +204,27 @@ cmd_restore() {
     }
 
     ensure_passphrase
-    tmp_plaintext="$(mktemp)"
-    trap 'rm -f "$tmp_plaintext"' EXIT
+    temp_plaintext="$(mktemp)"
+    trap 'rm -f "$temp_plaintext"' EXIT
 
-    decrypt_file "$input" "$tmp_plaintext" DOTFILES_BACKUP_PASSPHRASE
+    decrypt_file "$input" "$temp_plaintext" DOTFILES_BACKUP_PASSPHRASE
 
-    while IFS=$'\t' read -r env_var label owner value_b64; do
-        [[ -z "$env_var" || -z "$label" || -z "$owner" || -z "$value_b64" ]] && continue
-        value="$(printf '%s' "$value_b64" | base64 -d 2>/dev/null || printf '%s' "$value_b64" | base64 -D 2>/dev/null || true)"
+    while IFS=$'\t' read -r env_var label owner value_base64; do
+        [[ -z "$env_var" || -z "$label" || -z "$owner" || -z "$value_base64" ]] && continue
+        value="$(printf '%s' "$value_base64" | base64 -d 2>/dev/null || printf '%s' "$value_base64" | base64 -D 2>/dev/null || true)"
         [[ -z "$value" ]] && continue
 
         owner_template="$(normalize_owner_template "$owner")"
         resolved_owner="$(resolve_owner "$owner_template")"
 
         secret_set "$label" "$resolved_owner" "$value"
-        ensure_map_entry "$env_var" "$label" "$owner_template" "" && map_added=$((map_added + 1))
+        ensure_map_entry "$env_var" "$label" "$owner_template" "" && map_entries_added=$((map_entries_added + 1))
         restored=$((restored + 1))
-    done <"$tmp_plaintext"
+    done <"$temp_plaintext"
 
-    rm -f "$tmp_plaintext"
+    rm -f "$temp_plaintext"
     trap - EXIT
-    echo "Restored entries: $restored (map entries added: $map_added)"
+    echo "Restored entries: $restored (map entries added: $map_entries_added)"
 }
 
 main() {
@@ -234,29 +236,29 @@ main() {
         return
     }
 
-    require_cmd jq
+    require_command jq
     [[ "$subcommand" == "restore" ]] && ensure_map_file
     require_map
     detect_store
     require_store
 
     case "$subcommand" in
-        list) cmd_list "$@" ;;
-        doctor) cmd_doctor "$@" ;;
-        env) cmd_env "$@" ;;
-        set) cmd_set "$@" ;;
-        get) cmd_get "$@" ;;
-        delete) cmd_delete "$@" ;;
-        backup) cmd_backup "$@" ;;
-        restore) cmd_restore "$@" ;;
-        "" | -h | --help | help)
-            usage
-            ;;
-        *)
-            echo "Unknown command: $subcommand" >&2
-            usage
-            exit 1
-            ;;
+    list) command_list "$@" ;;
+    doctor) command_doctor "$@" ;;
+    env) command_env "$@" ;;
+    set) command_set "$@" ;;
+    get) command_get "$@" ;;
+    delete) command_delete "$@" ;;
+    backup) command_backup "$@" ;;
+    restore) command_restore "$@" ;;
+    "" | -h | --help | help)
+        usage
+        ;;
+    *)
+        echo "Unknown command: $subcommand" >&2
+        usage
+        exit 1
+        ;;
     esac
 }
 

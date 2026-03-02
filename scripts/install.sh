@@ -7,15 +7,27 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$DOTFILES_DIR/scripts/lib/platform.sh"
 PLATFORM="$(detect_platform)"
 SKIP_MACOS=0
+RESTORE_PATH=""
 
-for arg in "$@"; do
-    case "$arg" in
-        --skip-macos) SKIP_MACOS=1 ;;
-        *)
-            echo "Unknown argument: $arg" >&2
-            echo "Usage: ./scripts/install.sh [--skip-macos]" >&2
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+    --skip-macos)
+        SKIP_MACOS=1
+        shift
+        ;;
+    --restore)
+        if [[ -z "${2:-}" ]]; then
+            echo "Error: --restore requires a path argument." >&2
             exit 1
-            ;;
+        fi
+        RESTORE_PATH="$2"
+        shift 2
+        ;;
+    *)
+        echo "Unknown argument: $1" >&2
+        echo "Usage: ./scripts/install.sh [--skip-macos] [--restore <path>]" >&2
+        exit 1
+        ;;
     esac
 done
 
@@ -34,10 +46,15 @@ else
     echo "Oh My Zsh already installed."
 fi
 
+if [[ -n "$RESTORE_PATH" ]]; then
+    echo "==> Restoring from backup"
+    "$DOTFILES_DIR/scripts/restore.sh" "$RESTORE_PATH"
+fi
+
 echo "==> Seeding local config"
 "$DOTFILES_DIR/scripts/local.sh" init
 
-echo "==> Creating symlinks"
+echo "==> Creating symlinks and generating configs"
 "$DOTFILES_DIR/scripts/symlinks.sh"
 
 if [[ "$PLATFORM" == "macos" ]] && [[ "$SKIP_MACOS" -eq 0 ]]; then

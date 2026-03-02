@@ -8,52 +8,64 @@ source "$DOTFILES_DIR/scripts/lib/restore.sh"
 LOCAL_DIR="$DOTFILES_DIR/local"
 EXAMPLE_DIR="$DOTFILES_DIR/local.example"
 
+SEED_FILES=(
+    "git/.gitconfig"
+    "npm/.npmrc"
+    "secrets/secrets-map.json"
+)
+
 list_relative_files() {
-    local base_dir="$1"
+    local base_directory="$1"
     if command -v fd >/dev/null 2>&1; then
-        fd -t f -HI --base-directory "$base_dir"
+        fd -t f -HI --base-directory "$base_directory"
     else
         (
-            cd "$base_dir"
+            cd "$base_directory"
             find . -type f -print | sed 's|^\./||'
         )
     fi
 }
 
 usage() {
-    cat <<'EOF'
+    cat <<EOF
 Usage:
   dotfiles-local init
   dotfiles-local list
   dotfiles-local backup [output.enc]
-  dotfiles-local restore <input.enc>
+  dotfiles-local restore [--overwrite] <input.enc>
 
 Examples:
   dotfiles-local init
+  dotfiles-local backup
   dotfiles-local backup ~/local.enc
-  DOTFILES_BACKUP_PASSPHRASE='strong-passphrase' dotfiles-local backup ~/local.enc
-  dotfiles-local restore ~/local.enc
-  DOTFILES_LOCAL_RESTORE_OVERWRITE=1 dotfiles-local restore ~/local.enc
+  dotfiles-local restore backups/20260302-120000/local.enc
+  dotfiles-local restore --overwrite backups/20260302-120000/local.enc
 
 Notes:
-  - local/ holds machine-specific config (git identities, npm registries, secrets map)
-  - local.example/ contains sanitized templates seeded on first install
+  - init seeds only structural defaults (git config, npm config, secrets map)
+  - local.example/ contains additional examples for opt-in use
+  - Backup defaults to $DOTFILES_DIR/backups/<timestamp>/local.enc
   - Backup file is encrypted with AES-256-CBC + PBKDF2
 EOF
 }
 
-cmd_init() {
+command_init() {
     local seeded=0
     local skipped=0
 
     if [[ ! -d "$EXAMPLE_DIR" ]]; then
-        echo "Template directory not found: $EXAMPLE_DIR" >&2
+        echo "Example directory not found: $EXAMPLE_DIR" >&2
         exit 1
     fi
 
-    while IFS= read -r relative_path; do
+    for relative_path in "${SEED_FILES[@]}"; do
         local source_path="$EXAMPLE_DIR/$relative_path"
         local destination_path="$LOCAL_DIR/$relative_path"
+
+        if [[ ! -f "$source_path" ]]; then
+            echo "  missing example: $relative_path" >&2
+            continue
+        fi
 
         if [[ -e "$destination_path" ]]; then
             echo "  exists: $relative_path"
@@ -64,12 +76,12 @@ cmd_init() {
             echo "  seeded: $relative_path"
             seeded=$((seeded + 1))
         fi
-    done < <(list_relative_files "$EXAMPLE_DIR")
+    done
 
     echo "Seeded $seeded file(s), skipped $skipped existing."
 }
 
-cmd_list() {
+command_list() {
     if [[ ! -d "$LOCAL_DIR" ]]; then
         echo "No local config directory found."
         return 0
@@ -82,36 +94,55 @@ cmd_list() {
     fi
 }
 
-cmd_backup() {
-    local output="${1:-$HOME/local-$DOTFILES_TIMESTAMP.enc}"
-    local tmp_archive
+command_backup() {
+    local default_directory="$DOTFILES_DIR/backups/$DOTFILES_TIMESTAMP"
+    local output="${1:-$default_directory/local.enc}"
+    local temp_archive
 
-    require_cmd tar
+    require_command tar
     ensure_passphrase
+    mkdir -p "$(dirname "$output")"
 
     if [[ ! -d "$LOCAL_DIR" ]]; then
         echo "No local config to back up. Run 'dotfiles-local init' first." >&2
         exit 1
     fi
 
-    tmp_archive="$(mktemp)"
-    trap 'rm -f "$tmp_archive"' EXIT
-    tar -cf "$tmp_archive" -C "$DOTFILES_DIR" local
+    temp_archive="$(mktemp)"
+    trap 'rm -f "$temp_archive"' EXIT
+    tar -cf "$temp_archive" -C "$DOTFILES_DIR" local
 
-    encrypt_file "$tmp_archive" "$output" DOTFILES_BACKUP_PASSPHRASE
+    encrypt_file "$temp_archive" "$output" DOTFILES_BACKUP_PASSPHRASE
 
     chmod 600 "$output"
-    rm -f "$tmp_archive"
+    rm -f "$temp_archive"
     trap - EXIT
     echo "Backup written: $output"
 }
 
-cmd_restore() {
-    local input="${1:-}"
-    local tmp_archive extract_dir
-    local overwrite="${DOTFILES_LOCAL_RESTORE_OVERWRITE:-0}"
+command_restore() {
+    local input=""
+    local temp_archive extract_directory
+    local overwrite=0
 
-    require_cmd tar
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+        --overwrite)
+            overwrite=1
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            input="$1"
+            shift
+            ;;
+        esac
+    done
+
+    require_command tar
 
     [[ -n "$input" ]] || {
         usage
@@ -123,38 +154,38 @@ cmd_restore() {
     }
 
     ensure_passphrase
-    tmp_archive="$(mktemp)"
-    trap 'rm -f "${tmp_archive:-}"; rm -rf "${extract_dir:-}"' EXIT
+    temp_archive="$(mktemp)"
+    trap 'rm -f "${temp_archive:-}"; rm -rf "${extract_directory:-}"' EXIT
 
-    decrypt_file "$input" "$tmp_archive" DOTFILES_BACKUP_PASSPHRASE
+    decrypt_file "$input" "$temp_archive" DOTFILES_BACKUP_PASSPHRASE
 
-    extract_dir="$(mktemp -d)"
-    tar -xf "$tmp_archive" -C "$extract_dir"
-    rm -f "$tmp_archive"
+    extract_directory="$(mktemp -d)"
+    tar -xf "$temp_archive" -C "$extract_directory"
+    rm -f "$temp_archive"
 
-    if [[ ! -d "$extract_dir/local" ]]; then
+    if [[ ! -d "$extract_directory/local" ]]; then
         echo "Archive does not contain a local/ directory." >&2
-        rm -rf "$extract_dir"
+        rm -rf "$extract_directory"
         exit 1
     fi
 
     local files=()
     while IFS= read -r file; do
         files+=("$file")
-    done < <(list_relative_files "$extract_dir/local")
+    done < <(list_relative_files "$extract_directory/local")
 
-    if ! check_restore_conflicts "$overwrite" "$LOCAL_DIR" "DOTFILES_LOCAL_RESTORE_OVERWRITE" "${files[@]}"; then
-        rm -rf "$extract_dir"
+    if ! check_restore_conflicts "$overwrite" "$LOCAL_DIR" "${files[@]}"; then
+        rm -rf "$extract_directory"
         exit 1
     fi
 
     mkdir -p "$LOCAL_DIR"
     for file in "${files[@]}"; do
         mkdir -p "$(dirname "$LOCAL_DIR/$file")"
-        cp -p "$extract_dir/local/$file" "$LOCAL_DIR/$file"
+        cp -p "$extract_directory/local/$file" "$LOCAL_DIR/$file"
     done
 
-    rm -rf "$extract_dir"
+    rm -rf "$extract_directory"
     trap - EXIT
     echo "Restore complete to: $LOCAL_DIR"
 }
@@ -169,22 +200,22 @@ main() {
     }
 
     case "$subcommand" in
-        init) cmd_init ;;
-        list) cmd_list ;;
-        backup)
-            cmd_backup "$@"
-            ;;
-        restore)
-            cmd_restore "$@"
-            ;;
-        "" | -h | --help | help)
-            usage
-            ;;
-        *)
-            echo "Unknown command: $subcommand" >&2
-            usage
-            exit 1
-            ;;
+    init) command_init ;;
+    list) command_list ;;
+    backup)
+        command_backup "$@"
+        ;;
+    restore)
+        command_restore "$@"
+        ;;
+    "" | -h | --help | help)
+        usage
+        ;;
+    *)
+        echo "Unknown command: $subcommand" >&2
+        usage
+        exit 1
+        ;;
     esac
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Shared bootstrap for CLI scripts invoked via symlink.
+# Shared bootstrap for CLI scripts (resolves DOTFILES_DIR through symlinks).
 
-_resolve_script_dir() {
+_resolve_script_directory() {
     local path="$1"
     while [[ -L "$path" ]]; do
         local target
@@ -15,8 +15,8 @@ _resolve_script_dir() {
     cd "$(dirname "$path")" && pwd
 }
 
-DOTFILES_DIR="$(cd "$(_resolve_script_dir "${BASH_SOURCE[1]}")/.." && pwd)"
+DOTFILES_DIR="$(cd "$(_resolve_script_directory "${BASH_SOURCE[1]}")/.." && pwd)"
 DOTFILES_TIMESTAMP="${DOTFILES_TIMESTAMP:-$(date +%Y%m%d-%H%M%S)}"
-unset -f _resolve_script_dir
+unset -f _resolve_script_directory
 
 source "$DOTFILES_DIR/scripts/lib/platform.sh"

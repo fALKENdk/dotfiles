@@ -66,16 +66,16 @@ install_cursor_official() {
 
 # Run `brew bundle` on the Brewfile, then install Cursor.
 install_packages() {
-    local dotfiles_dir="$1"
+    local dotfiles_directory="$1"
 
     ensure_homebrew
 
-    if [[ ! -f "$dotfiles_dir/Brewfile" ]]; then
-        echo "Brewfile not found at $dotfiles_dir/Brewfile" >&2
+    if [[ ! -f "$dotfiles_directory/Brewfile" ]]; then
+        echo "Brewfile not found at $dotfiles_directory/Brewfile" >&2
         exit 1
     fi
 
     echo "Installing packages from Brewfile..."
-    brew bundle --file "$dotfiles_dir/Brewfile"
+    brew bundle --file "$dotfiles_directory/Brewfile"
     install_cursor_official
 }

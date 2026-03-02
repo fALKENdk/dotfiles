@@ -12,12 +12,12 @@ ensure_passphrase() {
 }
 
 encrypt_file() {
-    local input="$1" output="$2" passphrase_var="${3:-}"
+    local input="$1" output="$2" passphrase_variable="${3:-}"
 
-    require_cmd openssl
-    if [[ -n "$passphrase_var" && -n "${!passphrase_var:-}" ]]; then
+    require_command openssl
+    if [[ -n "$passphrase_variable" && -n "${!passphrase_variable:-}" ]]; then
         openssl enc -aes-256-cbc -pbkdf2 -salt \
-            -pass "env:$passphrase_var" \
+            -pass "env:$passphrase_variable" \
             -in "$input" -out "$output"
     else
         openssl enc -aes-256-cbc -pbkdf2 -salt -in "$input" -out "$output"
@@ -25,12 +25,12 @@ encrypt_file() {
 }
 
 decrypt_file() {
-    local input="$1" output="$2" passphrase_var="${3:-}"
+    local input="$1" output="$2" passphrase_variable="${3:-}"
 
-    require_cmd openssl
-    if [[ -n "$passphrase_var" && -n "${!passphrase_var:-}" ]]; then
+    require_command openssl
+    if [[ -n "$passphrase_variable" && -n "${!passphrase_variable:-}" ]]; then
         openssl enc -d -aes-256-cbc -pbkdf2 -salt \
-            -pass "env:$passphrase_var" \
+            -pass "env:$passphrase_variable" \
             -in "$input" -out "$output"
     else
         openssl enc -d -aes-256-cbc -pbkdf2 -salt -in "$input" -out "$output"

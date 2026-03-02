@@ -10,6 +10,12 @@ cd ~/.dotfiles
 ./scripts/install.sh
 ```
 
+Restore from an existing backup during install:
+
+```bash
+./scripts/install.sh --restore backups/20260302-120000
+```
+
 Use `~/.dotfiles` to keep `$HOME` clean.
 
 ## Fresh macOS Bootstrap
@@ -20,7 +26,7 @@ For a brand-new Mac:
 bash <(curl -fsSL https://raw.githubusercontent.com/fALKENdk/dotfiles/main/scripts/bootstrap.sh)
 ```
 
-This runs: Xcode CLT install, clone, package install, local config seed, symlinks, and macOS defaults.
+This runs: Xcode CLT install, clone, package install, local config seed, symlinks and config generation, and macOS defaults.
 
 Optional:
 
@@ -28,21 +34,18 @@ Optional:
 # Skip macOS defaults
 bash <(curl -fsSL https://raw.githubusercontent.com/fALKENdk/dotfiles/main/scripts/bootstrap.sh) --skip-macos
 
+# Restore backups during install
+./scripts/install.sh --restore backups/20260302-120000
+
 # Disable remote installers (Oh My Zsh / Cursor installer)
 DOTFILES_ALLOW_REMOTE_INSTALLERS=0 ~/.dotfiles/scripts/install.sh
-```
-
-After bootstrap, restore private backups (if available):
-
-```bash
-dotfiles restore ~/backups/dotfiles
 ```
 
 ## Prerequisites
 
 Packages are installed automatically via `brew bundle` from the `Brewfile`. Key dependencies:
 
-- **Brewfile**: `git`, `jq`, `fd`, `rg` (ripgrep), `shellcheck`, `shfmt`, `tree`
+- **Brewfile**: `git`, `jq`, `fd`, `rg` (ripgrep), `shellcheck`, `shfmt`, `tree`, `bats-core`
 - **System**: `openssl`, `tar` (expected to be pre-installed on macOS and Linux)
 - **Secrets**: macOS `security` (built-in) or `pass` (Linux)
 
@@ -66,29 +69,43 @@ Standalone commands:
 
 All encrypted backups use a single passphrase (`DOTFILES_BACKUP_PASSPHRASE`).
 
+Backups are stored in `backups/` (gitignored), organized into timestamped directories:
+
+```
+backups/
+  20260302-120000/      # full backup (all three modules)
+    local.enc
+    secrets.enc
+    ssh.enc
+  20260301-150000/      # individual backup (one module)
+    local.enc
+```
+
 One-shot backup:
 
 ```bash
 dotfiles backup
-dotfiles backup ~/backups/dotfiles
-DOTFILES_BACKUP_PASSPHRASE='...' dotfiles backup ~/backups/dotfiles
+dotfiles backup ~/external-backups
+DOTFILES_BACKUP_PASSPHRASE='...' dotfiles backup
 ```
 
 One-shot restore:
 
 ```bash
-dotfiles restore ~/backups/dotfiles
-dotfiles restore --local ~/local.enc --ssh ~/ssh.enc
-DOTFILES_BACKUP_PASSPHRASE='...' dotfiles restore ~/backups/dotfiles
+dotfiles restore                              # restores from latest timestamped directory in backups/
+dotfiles restore backups/20260302-120000       # restores only the .enc files found in that directory
+dotfiles restore --local backups/20260302-120000/local.enc
+DOTFILES_BACKUP_PASSPHRASE='...' dotfiles restore
 ```
 
-When run interactively, `backup` and `restore` prompt once for the passphrase and reuse it for all three modules.
+When run interactively, `backup` and `restore` prompt once for the passphrase and reuse it for all three modules. Override the default backup location with `DOTFILES_BACKUP_DIR`.
 
 ## Home Directory Policy
 
 Use top-level links only for core shell/git files. Use XDG-style paths for runtime state and helper commands.
 
-- Top-level links: `~/.zshrc`, `~/.zprofile`, `~/.gitconfig*`, `~/.gitignore_global`, `~/.npmrc`, `~/.ssh/config`
+- Symlinks: `~/.zshrc`, `~/.zprofile`, `~/.gitignore_global`, `~/.gitconfig-*`, `~/.ssh/config`
+- Generated files: `~/.gitconfig`, `~/.npmrc` (edit sources in `local/`, run `dotfiles symlinks` to regenerate)
 - Platform marker: `~/.config/dotfiles/platform`
 - Helper commands: `~/.local/bin`
 - Homebrew shell init is handled by `zsh/.zprofile` (`eval "$(brew shellenv)"`)
@@ -107,31 +124,36 @@ On macOS, `./scripts/install.sh` runs `scripts/macos.sh` unless `--skip-macos` i
 
 ## Local Config (`local/`)
 
-Machine-specific files live in `local/` (gitignored). Templates live in `local.example/` (tracked).
+Machine-specific files live in `local/` (gitignored). Examples live in `local.example/` (tracked, reference only).
 
-Seed local files:
+`dotfiles-local init` seeds only structural defaults:
+
+- `local/git/.gitconfig` — base git settings (core, init, push, fetch)
+- `local/npm/.npmrc` — base npm settings
+- `local/secrets/secrets-map.json` — empty secret mappings
+
+Additional files are opt-in. Copy from `local.example/` and customize:
+
+- `local/git/.gitconfig-github` — GitHub identity (auto-detected by `dotfiles symlinks`)
+- `local/git/.gitconfig-azure-devops` — Azure DevOps identity (auto-detected)
+- `local/npm/.npmrc-registries` — scoped npm registries (appended to `~/.npmrc`)
+
+When `dotfiles symlinks` runs, it generates `~/.gitconfig` from `local/git/.gitconfig` and appends `includeIf` blocks for each identity file found. Known providers (github, azure-devops) get conditional includes; other names get unconditional `[include]`.
 
 ```bash
 dotfiles-local init
 dotfiles-local list
 ```
 
-Expected local files:
-
-- `local/git/.gitconfig-github`
-- `local/git/.gitconfig-azure-devops`
-- `local/npm/.npmrc-registries`
-- `local/secrets/secrets-map.json`
-
 Encrypted backup/restore:
 
 ```bash
-dotfiles-local backup ~/local.enc
-dotfiles-local restore ~/local.enc
+dotfiles-local backup
+dotfiles-local restore backups/20260302-120000/local.enc
+dotfiles-local restore --overwrite backups/20260302-120000/local.enc
 
 # Non-interactive
-DOTFILES_BACKUP_PASSPHRASE='strong-passphrase' dotfiles-local backup ~/local.enc
-DOTFILES_LOCAL_RESTORE_OVERWRITE=1 dotfiles-local restore ~/local.enc
+DOTFILES_BACKUP_PASSPHRASE='strong-passphrase' dotfiles-local backup
 ```
 
 ## Secrets and npm Credentials
@@ -139,7 +161,7 @@ DOTFILES_LOCAL_RESTORE_OVERWRITE=1 dotfiles-local restore ~/local.enc
 npm credentials are never stored in tracked files.
 
 - `dotfiles-secrets env` exports secrets into shell env
-- `npm/.npmrc` references those environment variables
+- `local/npm/.npmrc` references those environment variables
 - Secret mappings live in `local/secrets/secrets-map.json`
 
 Stores:
@@ -161,12 +183,11 @@ dotfiles-secrets set AZURE_NPM_EMAIL "you@example.com"
 Encrypted backup/restore:
 
 ```bash
-dotfiles-secrets backup ~/secrets.enc
-dotfiles-secrets restore ~/secrets.enc
+dotfiles-secrets backup
+dotfiles-secrets restore backups/20260302-120000/secrets.enc
 
 # Non-interactive
-DOTFILES_BACKUP_PASSPHRASE='choose-a-strong-passphrase' dotfiles-secrets backup ~/secrets.enc
-dotfiles-secrets restore ~/secrets.enc
+DOTFILES_BACKUP_PASSPHRASE='choose-a-strong-passphrase' dotfiles-secrets backup
 ```
 
 Linux `pass` one-time setup:
@@ -204,12 +225,12 @@ Override the map file path with `DOTFILES_SECRETS_MAP_FILE`.
 
 ```bash
 dotfiles-ssh list
-dotfiles-ssh backup ~/ssh.enc
-dotfiles-ssh restore ~/ssh.enc
+dotfiles-ssh backup
+dotfiles-ssh restore backups/20260302-120000/ssh.enc
+dotfiles-ssh restore --overwrite backups/20260302-120000/ssh.enc
 
-# Non-interactive / overwrite restore
-DOTFILES_BACKUP_PASSPHRASE='choose-a-strong-passphrase' dotfiles-ssh backup ~/ssh.enc
-DOTFILES_SSH_RESTORE_OVERWRITE=1 dotfiles-ssh restore ~/ssh.enc
+# Non-interactive
+DOTFILES_BACKUP_PASSPHRASE='choose-a-strong-passphrase' dotfiles-ssh backup
 ```
 
 ## Package Installation
@@ -218,6 +239,14 @@ Packages are defined in `Brewfile` and installed with `brew bundle` from `script
 Linux additionally installs `pass`.
 
 Cursor is installed through the official installer (unless disabled by `DOTFILES_ALLOW_REMOTE_INSTALLERS=0`), and CLI linking is attempted where supported.
+
+## Testing
+
+Integration tests use [BATS](https://github.com/bats-core/bats-core) and run in isolated temp directories.
+
+```bash
+bats tests/
+```
 
 ## Security Notes
 

@@ -1,6 +1,7 @@
 tap "azure/azd"
 
 brew "azure/azd/azd"
+brew "bats-core"
 brew "bitwarden-cli"
 brew "dotnet"
 brew "fd"
