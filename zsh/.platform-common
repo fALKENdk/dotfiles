@@ -9,7 +9,10 @@ NVM_COMPLETION="${HOMEBREW_PREFIX:-}/opt/nvm/etc/bash_completion.d/nvm"
 [[ -s "$NVM_COMPLETION" ]] || NVM_COMPLETION="$NVM_DIR/bash_completion"
 
 if [[ -x "${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" ]]; then
-    _secrets_output="$("${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" env 2>/dev/null)" && eval "$_secrets_output" || \
-        [[ -t 1 ]] && echo "[dotfiles] secrets failed; run 'dotfiles-secrets doctor' to diagnose" >&2
+    if _secrets_output="$("${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" env 2>/dev/null)"; then
+        eval "$_secrets_output"
+    elif [[ -t 1 ]]; then
+        echo "[dotfiles] secrets failed; run 'dotfiles-secrets doctor' to diagnose" >&2
+    fi
     unset _secrets_output
 fi

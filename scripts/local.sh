@@ -87,6 +87,7 @@ cmd_backup() {
     local tmp_archive
 
     require_cmd tar
+    ensure_passphrase
 
     if [[ ! -d "$LOCAL_DIR" ]]; then
         echo "No local config to back up. Run 'dotfiles-local init' first." >&2
@@ -121,6 +122,7 @@ cmd_restore() {
         exit 1
     }
 
+    ensure_passphrase
     tmp_archive="$(mktemp)"
     trap 'rm -f "${tmp_archive:-}"; rm -rf "${extract_dir:-}"' EXIT
 
@@ -147,10 +149,10 @@ cmd_restore() {
     fi
 
     mkdir -p "$LOCAL_DIR"
-    while IFS= read -r file; do
+    for file in "${files[@]}"; do
         mkdir -p "$(dirname "$LOCAL_DIR/$file")"
         cp -p "$extract_dir/local/$file" "$LOCAL_DIR/$file"
-    done < <(list_relative_files "$extract_dir/local")
+    done
 
     rm -rf "$extract_dir"
     trap - EXIT

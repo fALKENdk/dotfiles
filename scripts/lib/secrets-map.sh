@@ -108,19 +108,19 @@ ensure_map_entry() {
 
     if jq -e \
         --arg env_var "$env_var" \
-        --arg label "$label" \
+        --arg entry_label "$label" \
         '
         (.entries // .) as $entries |
         ($entries | if type == "array" then . else [] end) as $arr |
-        any($arr[]; .env_var == $env_var and .label == $label)
+        any($arr[]; .env_var == $env_var and .label == $entry_label)
     ' "$SECRETS_MAP_FILE" >/dev/null 2>&1; then
         return 1
     fi
 
     tmp_map="$(mktemp)"
-    jq \
+    if ! jq \
         --arg env_var "$env_var" \
-        --arg label "$label" \
+        --arg entry_label "$label" \
         --arg owner "$owner_template" \
         --arg note "$note" \
         '
@@ -129,14 +129,18 @@ ensure_map_entry() {
         {
             entries: (
                 $arr + [{
-                    env_var: $env_var,
-                    label: $label,
-                    owner: $owner,
-                    note: $note
+                    "env_var": $env_var,
+                    "label": $entry_label,
+                    "owner": $owner,
+                    "note": $note
                 }]
             )
         }
-    ' "$SECRETS_MAP_FILE" >"$tmp_map"
+    ' "$SECRETS_MAP_FILE" >"$tmp_map"; then
+        rm -f "$tmp_map"
+        echo "Failed to update map file." >&2
+        return 1
+    fi
     mv "$tmp_map" "$SECRETS_MAP_FILE"
     return 0
 }

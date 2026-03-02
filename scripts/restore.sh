@@ -40,16 +40,16 @@ main() {
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
-            --local)
-                local_backup="${2:-}"
-                shift 2
-                ;;
-            --secrets)
-                secrets_backup="${2:-}"
-                shift 2
-                ;;
-            --ssh)
-                ssh_backup="${2:-}"
+            --local | --secrets | --ssh)
+                if [[ -z "${2:-}" || "$2" == --* ]]; then
+                    echo "Error: $1 requires a file path argument." >&2
+                    exit 1
+                fi
+                case "$1" in
+                    --local) local_backup="$2" ;;
+                    --secrets) secrets_backup="$2" ;;
+                    --ssh) ssh_backup="$2" ;;
+                esac
                 shift 2
                 ;;
             *)

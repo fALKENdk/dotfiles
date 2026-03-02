@@ -89,6 +89,7 @@ cmd_backup() {
     local file
 
     require_cmd tar
+    ensure_passphrase
 
     while IFS= read -r file; do
         [[ -n "$file" ]] && files+=("$file")
@@ -149,6 +150,7 @@ cmd_restore() {
         exit 1
     }
 
+    ensure_passphrase
     tmp_dir="$(mktemp -d)"
     trap 'rm -rf "$tmp_dir"' EXIT
     archive_file="$tmp_dir/ssh-keys.tar"

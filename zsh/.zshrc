@@ -16,10 +16,10 @@ fpath=("$DOTFILES_DIR/zsh/completions" $fpath)
 
 [[ -d "$ZSH" ]] && source "$ZSH/oh-my-zsh.sh"
 
-[[ -f "$DOTFILES_DIR/zsh/.platform-common" ]] && source "$DOTFILES_DIR/zsh/.platform-common"
-
 DOTFILES_PLATFORM_FILE="$HOME/.config/dotfiles/platform"
 if [[ -f "$DOTFILES_PLATFORM_FILE" ]]; then
     DOTFILES_PLATFORM="$(<"$DOTFILES_PLATFORM_FILE")"
     [[ -f "$DOTFILES_DIR/zsh/.platform-$DOTFILES_PLATFORM" ]] && source "$DOTFILES_DIR/zsh/.platform-$DOTFILES_PLATFORM"
 fi
+
+[[ -f "$DOTFILES_DIR/zsh/.platform-common" ]] && source "$DOTFILES_DIR/zsh/.platform-common"

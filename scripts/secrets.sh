@@ -149,6 +149,8 @@ cmd_backup() {
     local output="${1:-$HOME/secrets-$DOTFILES_TIMESTAMP.enc}"
     local tmp_plaintext
     local written=0
+
+    ensure_passphrase
     tmp_plaintext="$(mktemp)"
     trap 'rm -f "$tmp_plaintext"' EXIT
 
@@ -199,6 +201,7 @@ cmd_restore() {
         exit 1
     }
 
+    ensure_passphrase
     tmp_plaintext="$(mktemp)"
     trap 'rm -f "$tmp_plaintext"' EXIT
 
