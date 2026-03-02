@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Symlink helpers: backup existing files, create links, expose CLI commands.
-
 BACKUP_DIR="${BACKUP_DIR:-$HOME/.dotfiles-backups/${DOTFILES_TIMESTAMP:-$(date +%Y%m%d-%H%M%S)}}"
 
-# Remove a managed symlink or back up a real file before it gets replaced.
 # Managed symlinks (pointing into $DOTFILES_DIR) are removed silently.
 # Real files are moved to $BACKUP_DIR.
 backup_if_needed() {
@@ -30,7 +27,6 @@ backup_if_needed() {
     fi
 }
 
-# Create a symlink, backing up any existing file at the target path.
 link_file() {
     local source_path="$1"
     local target_path="$2"
@@ -46,7 +42,6 @@ link_file() {
     echo "Linked: $target_path -> $source_path"
 }
 
-# Symlink a script into ~/.local/bin so it's available as a command.
 link_command() {
     local source_path="$1"
     local command_name="$2"
@@ -60,5 +55,5 @@ link_command() {
     mkdir -p "$HOME/.local/bin"
     backup_if_needed "$target_path"
     ln -sfn "$source_path" "$target_path"
-    echo "Command linked: $command_name -> $source_path"
+    echo "Linked: $command_name -> $source_path"
 }

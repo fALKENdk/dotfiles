@@ -5,7 +5,7 @@ Minimal cross-platform dotfiles with local/private data kept out of git.
 ## Quick Start
 
 ```bash
-git clone git@github.com:fALKENdk/dotfiles.git ~/.dotfiles
+git clone git@github.com:<user>/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ./scripts/install.sh
 ```
@@ -42,8 +42,8 @@ dotfiles restore ~/backups/dotfiles
 
 Packages are installed automatically via `brew bundle` from the `Brewfile`. Key dependencies:
 
-- **Required**: `git`, `jq`, `openssl`, `tar`
-- **Recommended**: `fd`, `rg` (ripgrep), `shellcheck`, `shfmt`, `tree`
+- **Brewfile**: `git`, `jq`, `fd`, `rg` (ripgrep), `shellcheck`, `shfmt`, `tree`
+- **System**: `openssl`, `tar` (expected to be pre-installed on macOS and Linux)
 - **Secrets**: macOS `security` (built-in) or `pass` (Linux)
 
 ## Commands

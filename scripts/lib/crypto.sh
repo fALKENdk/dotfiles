@@ -3,11 +3,14 @@ set -euo pipefail
 
 # Encrypt/decrypt helpers using openssl AES-256-CBC + PBKDF2.
 
-# Encrypt a file. Prompts for passphrase unless $passphrase_var is set.
-#
-# @param $1 input          - path to plaintext input file
-# @param $2 output         - path to write encrypted output
-# @param $3 passphrase_var - name of env var holding the passphrase (optional)
+ensure_passphrase() {
+    if [[ -z "${DOTFILES_BACKUP_PASSPHRASE:-}" ]]; then
+        read -rsp "Enter backup passphrase: " DOTFILES_BACKUP_PASSPHRASE
+        echo
+        export DOTFILES_BACKUP_PASSPHRASE
+    fi
+}
+
 encrypt_file() {
     local input="$1" output="$2" passphrase_var="${3:-}"
 
@@ -21,11 +24,6 @@ encrypt_file() {
     fi
 }
 
-# Decrypt a file. Prompts for passphrase unless $passphrase_var is set.
-#
-# @param $1 input          - path to encrypted input file
-# @param $2 output         - path to write decrypted output
-# @param $3 passphrase_var - name of env var holding the passphrase (optional)
 decrypt_file() {
     local input="$1" output="$2" passphrase_var="${3:-}"
 

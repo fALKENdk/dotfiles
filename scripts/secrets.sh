@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Unified secrets CLI with pluggable stores:
-# macOS Keychain (`security`) and pass password store (`pass`).
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
+source "$DOTFILES_DIR/scripts/lib/format.sh"
 source "$DOTFILES_DIR/scripts/lib/secrets-store.sh"
 source "$DOTFILES_DIR/scripts/lib/secrets-map.sh"
 

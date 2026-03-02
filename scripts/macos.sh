@@ -1,31 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Apply opinionated macOS system defaults (Finder, Dock, keyboard).
 # Idempotent — safe to re-run.
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$DOTFILES_DIR/scripts/lib/platform.sh"
 
-if [[ "${OSTYPE:-}" != darwin* ]]; then
+if [[ "$(detect_platform)" != "macos" ]]; then
     echo "macos.sh only runs on macOS."
     exit 0
 fi
 
 echo "Applying macOS defaults..."
 
-# Finder
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true
 defaults write com.apple.finder AppleShowAllFiles -bool true
 defaults write com.apple.finder ShowPathbar -bool true
 defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"
 
-# Dock
 defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock show-recents -bool false
 
-# Input/UX
 defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
 defaults write NSGlobalDomain com.apple.keyboard.fnState -bool true
 
-# Trackpad: secondary click in bottom-right corner.
+# Secondary click in bottom-right corner.
 defaults write com.apple.AppleMultitouchTrackpad TrackpadRightClick -bool true
 defaults write com.apple.AppleMultitouchTrackpad TrackpadCornerSecondaryClick -int 2
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadRightClick -bool true

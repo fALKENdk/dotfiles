@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Unified entry point for all dotfiles commands.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 
 usage() {
@@ -12,7 +11,7 @@ Usage: dotfiles <command> [args...]
   packages    Install Homebrew packages from Brewfile
   symlinks    Create/update dotfile symlinks
   macos       Apply macOS system defaults
-  secrets     Manage keychain/pass secrets
+  secrets     Manage secrets
   local       Manage machine-specific local/ config
   ssh         Manage SSH key backups
   backup      Run all backups (local config, secrets, SSH keys)

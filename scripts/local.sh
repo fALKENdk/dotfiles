@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Manage machine-specific config in local/ (gitignored).
-# Seed from templates, list contents, and encrypted backup/restore.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 source "$DOTFILES_DIR/scripts/lib/restore.sh"
@@ -77,7 +75,11 @@ cmd_list() {
         return 0
     fi
 
-    tree -a --noreport "$LOCAL_DIR"
+    if command -v tree >/dev/null 2>&1; then
+        tree -a --noreport "$LOCAL_DIR"
+    else
+        list_relative_files "$LOCAL_DIR"
+    fi
 }
 
 cmd_backup() {

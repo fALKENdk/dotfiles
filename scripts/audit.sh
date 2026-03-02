@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Quick health check: shell startup time, SSH permissions, secret-leak scan, lint, git status.
 # Standalone by design — works even before symlinks are created.
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -20,22 +19,34 @@ fi
 
 echo
 echo "==> Looking for obvious secret patterns in repo"
-rg -n -i --hidden \
-    --glob '!.git/**' \
-    --glob '!local/**' \
-    --glob '!local.example/**' \
-    --glob '!scripts/audit.sh' \
-    --glob '!scripts/secrets.sh' \
-    --glob '!README.md' \
-    '(password|_password|token|api[_-]?key|secret)' "$DOTFILES_DIR" || true
+if command -v rg >/dev/null 2>&1; then
+    rg -n -i --hidden \
+        --glob '!.git/**' \
+        --glob '!local/**' \
+        --glob '!local.example/**' \
+        --glob '!scripts/audit.sh' \
+        --glob '!scripts/secrets.sh' \
+        --glob '!README.md' \
+        '(password|_password|token|api[_-]?key|secret)' "$DOTFILES_DIR" || true
+else
+    echo "Skipped: rg (ripgrep) not installed."
+fi
 
 echo
 echo "==> ShellCheck lint"
-shellcheck -x -e SC1091 "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+if command -v shellcheck >/dev/null 2>&1; then
+    shellcheck -x -e SC1091 "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+else
+    echo "Skipped: shellcheck not installed."
+fi
 
 echo
 echo "==> shfmt style"
-shfmt -d -i 4 -ci -bn "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+if command -v shfmt >/dev/null 2>&1; then
+    shfmt -d -i 4 -ci -bn "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+else
+    echo "Skipped: shfmt not installed."
+fi
 
 echo
 echo "==> Git status"

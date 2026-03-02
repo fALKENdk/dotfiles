@@ -1,11 +1,10 @@
-# mkdir and cd into it in one step.
 mkcd() {
     mkdir -p "$1" && cd "$1"
 }
 
 # Lazy-load NVM on first use of nvm/node/npm/npx to avoid ~200ms shell startup penalty.
-# @global NVM_SCRIPT     - path to nvm.sh (set in .platform-*)
-# @global NVM_COMPLETION - path to nvm bash completion (set in .platform-*)
+# @global NVM_SCRIPT     - path to nvm.sh (set in .platform-common)
+# @global NVM_COMPLETION - path to nvm bash completion (set in .platform-common)
 _lazy_load_nvm() {
     unset -f _lazy_load_nvm nvm node npm npx
     [[ -n "${NVM_SCRIPT:-}" && -s "$NVM_SCRIPT" ]] && source "$NVM_SCRIPT"

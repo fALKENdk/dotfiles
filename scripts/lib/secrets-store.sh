@@ -7,7 +7,6 @@ set -euo pipefail
 DOTFILES_SECRETS_STORE="${DOTFILES_SECRETS_STORE:-auto}"
 DOTFILES_PASS_PREFIX="${DOTFILES_PASS_PREFIX:-dotfiles}"
 
-# Resolve DOTFILES_SECRETS_STORE from "auto" to the actual store name.
 detect_store() {
     case "$DOTFILES_SECRETS_STORE" in
         security | pass) ;;
@@ -83,15 +82,13 @@ secret_set() {
     local label="$1"
     local owner="$2"
     local value="$3"
-    local path
 
     case "$DOTFILES_SECRETS_STORE" in
         security)
             security add-generic-password -a "$owner" -s "$label" -w "$value" -U >/dev/null
             ;;
         pass)
-            path="$(pass_secret_path "$label" "$owner")"
-            printf '%s\n' "$value" | pass insert -m -f "$path" >/dev/null
+            printf '%s\n' "$value" | pass insert -m -f "$(pass_secret_path "$label" "$owner")" >/dev/null
             ;;
         *)
             return 1
@@ -102,15 +99,13 @@ secret_set() {
 secret_delete() {
     local label="$1"
     local owner="$2"
-    local path
 
     case "$DOTFILES_SECRETS_STORE" in
         security)
             security delete-generic-password -a "$owner" -s "$label" >/dev/null 2>&1 || true
             ;;
         pass)
-            path="$(pass_secret_path "$label" "$owner")"
-            pass rm -f "$path" >/dev/null 2>&1 || true
+            pass rm -f "$(pass_secret_path "$label" "$owner")" >/dev/null 2>&1 || true
             ;;
         *)
             return 1

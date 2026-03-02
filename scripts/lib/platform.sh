@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Platform detection, dependency checks, and Homebrew environment activation.
-
-# Print the normalized platform name to stdout.
 detect_platform() {
     case "$(uname -s)" in
         Darwin) echo "macos" ;;
@@ -15,7 +12,6 @@ detect_platform() {
     esac
 }
 
-# Assert that a command exists on PATH or exit.
 require_cmd() {
     local command_name="$1"
     if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -24,7 +20,6 @@ require_cmd() {
     fi
 }
 
-# Activate the Homebrew shell environment if brew is installed.
 # Tries standard installation paths when brew is not yet on PATH.
 activate_homebrew() {
     if command -v brew >/dev/null 2>&1; then

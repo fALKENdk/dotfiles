@@ -1,11 +1,15 @@
 # Common platform profile values shared across macOS and Linux.
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
-if [[ -x "$DOTFILES_DIR/scripts/secrets.sh" ]]; then
-    _secrets_stderr="$(mktemp 2>/dev/null || echo "/tmp/.dotfiles-secrets-err.$$")"
-    _secrets_output="$("$DOTFILES_DIR/scripts/secrets.sh" env 2>"$_secrets_stderr")" && eval "$_secrets_output" || \
-        [[ -t 1 ]] && [[ -s "$_secrets_stderr" ]] && echo "[dotfiles] secrets failed; run 'dotfiles-secrets doctor' to diagnose" >&2
-    rm -f "$_secrets_stderr"
-    unset _secrets_stderr _secrets_output
+# NVM paths: prefer Homebrew-installed nvm, fall back to $NVM_DIR.
+# HOMEBREW_PREFIX is set by `brew shellenv` in .zprofile before this runs.
+NVM_SCRIPT="${HOMEBREW_PREFIX:-}/opt/nvm/nvm.sh"
+[[ -s "$NVM_SCRIPT" ]] || NVM_SCRIPT="$NVM_DIR/nvm.sh"
+NVM_COMPLETION="${HOMEBREW_PREFIX:-}/opt/nvm/etc/bash_completion.d/nvm"
+[[ -s "$NVM_COMPLETION" ]] || NVM_COMPLETION="$NVM_DIR/bash_completion"
+
+if [[ -x "${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" ]]; then
+    _secrets_output="$("${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" env 2>/dev/null)" && eval "$_secrets_output" || \
+        [[ -t 1 ]] && echo "[dotfiles] secrets failed; run 'dotfiles-secrets doctor' to diagnose" >&2
+    unset _secrets_output
 fi

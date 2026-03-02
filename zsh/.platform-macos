@@ -1,5 +1,1 @@
 export DOTFILES_SECRETS_STORE="security"
-NVM_SCRIPT="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/nvm/nvm.sh"
-[[ -s "$NVM_SCRIPT" ]] || NVM_SCRIPT="$NVM_DIR/nvm.sh"
-NVM_COMPLETION="${HOMEBREW_PREFIX:-/opt/homebrew}/opt/nvm/etc/bash_completion.d/nvm"
-[[ -s "$NVM_COMPLETION" ]] || NVM_COMPLETION="$NVM_DIR/bash_completion"

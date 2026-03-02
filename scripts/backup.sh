@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run all encrypted backup tasks in one command.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 
 usage() {
     cat <<'EOF'
@@ -23,34 +23,29 @@ EOF
 }
 
 main() {
-    local output_dir="${1:-${DOTFILES_BACKUP_DIR:-$HOME}}"
-    local timestamp="$DOTFILES_TIMESTAMP"
-    local local_backup
-    local secrets_backup
-    local ssh_backup
-
-    if [[ "${1:-}" == "help" || "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-        usage
-        return 0
-    fi
+    case "${1:-}" in
+        -h | --help | help)
+            usage
+            return 0
+            ;;
+    esac
 
     if [[ "$#" -gt 1 ]]; then
-        usage
+        usage >&2
         exit 1
     fi
 
-    if [[ -z "${DOTFILES_BACKUP_PASSPHRASE:-}" ]]; then
-        read -rsp "Enter backup passphrase: " DOTFILES_BACKUP_PASSPHRASE
-        echo
-        export DOTFILES_BACKUP_PASSPHRASE
-    fi
+    local output_dir="${1:-${DOTFILES_BACKUP_DIR:-$HOME}}"
+    local local_backup secrets_backup ssh_backup
+
+    ensure_passphrase
 
     mkdir -p "$output_dir"
     output_dir="$(cd "$output_dir" && pwd)"
 
-    local_backup="$output_dir/local-$timestamp.enc"
-    secrets_backup="$output_dir/secrets-$timestamp.enc"
-    ssh_backup="$output_dir/ssh-$timestamp.enc"
+    local_backup="$output_dir/local-$DOTFILES_TIMESTAMP.enc"
+    secrets_backup="$output_dir/secrets-$DOTFILES_TIMESTAMP.enc"
+    ssh_backup="$output_dir/ssh-$DOTFILES_TIMESTAMP.enc"
 
     echo "Writing backups to: $output_dir"
     "$DOTFILES_DIR/scripts/local.sh" backup "$local_backup"

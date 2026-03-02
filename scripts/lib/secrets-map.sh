@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate, iterate, and update the JSON mapping between environment
-# variables and secrets store entries.
-
 SECRETS_MAP_FILE="${DOTFILES_SECRETS_MAP_FILE:-$DOTFILES_DIR/local/secrets/secrets-map.json}"
 
-# Validate that SECRETS_MAP_FILE exists and contains a well-formed entries array.
 require_map() {
     if [[ ! -f "$SECRETS_MAP_FILE" ]]; then
         echo "Map file not found: $SECRETS_MAP_FILE" >&2
@@ -29,7 +25,7 @@ require_map() {
     fi
 }
 
-# Create an empty map file when missing (used by restore flow).
+# Used by the restore flow to bootstrap the map file.
 ensure_map_file() {
     if [[ -f "$SECRETS_MAP_FILE" ]]; then
         return 0
@@ -43,7 +39,6 @@ ensure_map_file() {
 EOF
 }
 
-# Resolve the owner field: "__USER__" or empty becomes the current OS user.
 resolve_owner() {
     local owner="$1"
     if [[ -z "$owner" || "$owner" == "__USER__" ]]; then
@@ -57,22 +52,12 @@ resolve_owner() {
     fi
 }
 
-# Normalize an owner value back to the portable template form.
 normalize_owner_template() {
     local owner="$1"
     if [[ -z "$owner" || (-n "${USER:-}" && "$owner" == "$USER") ]]; then
         printf '%s' "__USER__"
     else
         printf '%s' "$owner"
-    fi
-}
-
-# Render TSV as an aligned table when `column` is available.
-render_tabular() {
-    if command -v column >/dev/null 2>&1; then
-        column -t -s $'\t'
-    else
-        cat
     fi
 }
 
@@ -87,7 +72,7 @@ emit_map_entries() {
   ' "$SECRETS_MAP_FILE"
 }
 
-# Iterate map entries, calling a function for each with: env_var label owner note
+# Callback receives: env_var label owner note
 for_each_map_entry() {
     local callback="$1"
 
@@ -98,7 +83,6 @@ for_each_map_entry() {
     done < <(emit_map_entries)
 }
 
-# Look up a single map entry by its env_var field.
 # Returns 1 if not found.
 find_entry_by_env_var() {
     local target="$1"
@@ -114,7 +98,6 @@ find_entry_by_env_var() {
     return 1
 }
 
-# Add a map entry if it doesn't already exist.
 # Returns 1 (without error) if the entry is already present.
 ensure_map_entry() {
     local env_var="$1"

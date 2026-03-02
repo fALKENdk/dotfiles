@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Entry point for machine setup: packages, symlinks, and macOS defaults.
 # Uses manual DOTFILES_DIR instead of lib/init.sh because this script
 # runs before symlinks exist.
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

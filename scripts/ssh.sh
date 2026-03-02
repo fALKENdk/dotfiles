@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Encrypted backup/restore for SSH key material.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 source "$DOTFILES_DIR/scripts/lib/restore.sh"
@@ -181,23 +180,23 @@ cmd_restore() {
     chmod 700 "$ssh_dir"
 
     local restore_files=()
-    while IFS= read -r file; do
-        [[ "$file" == "MANIFEST.txt" ]] && continue
-        [[ -f "$extract_dir/ssh/$file" ]] || continue
-        restore_files+=("$file")
-    done < <(ls -1 "$extract_dir/ssh")
+    for file in "$extract_dir/ssh"/*; do
+        [[ -f "$file" ]] || continue
+        local name
+        name="$(basename "$file")"
+        [[ "$name" == "MANIFEST.txt" ]] && continue
+        restore_files+=("$name")
+    done
 
     if ! check_restore_conflicts "$overwrite" "$ssh_dir" "DOTFILES_SSH_RESTORE_OVERWRITE" "${restore_files[@]}"; then
         rm -rf "$tmp_dir"
         exit 1
     fi
 
-    while IFS= read -r file; do
-        [[ "$file" == "MANIFEST.txt" ]] && continue
-        [[ -f "$extract_dir/ssh/$file" ]] || continue
+    for file in "${restore_files[@]}"; do
         cp -p "$extract_dir/ssh/$file" "$ssh_dir/$file"
         set_file_permissions "$ssh_dir/$file"
-    done < <(ls -1 "$extract_dir/ssh")
+    done
 
     rm -rf "$tmp_dir"
     trap - EXIT

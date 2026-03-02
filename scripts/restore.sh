@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Restore all encrypted backups in one command.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 
 usage() {
     cat <<'EOF'
@@ -31,10 +31,12 @@ find_latest() {
 main() {
     local local_backup="" secrets_backup="" ssh_backup=""
 
-    if [[ "${1:-}" == "help" || "${1:-}" == "-h" || "${1:-}" == "--help" || -z "${1:-}" ]]; then
-        usage
-        return 0
-    fi
+    case "${1:-}" in
+        "" | -h | --help | help)
+            usage
+            return 0
+            ;;
+    esac
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
@@ -72,11 +74,7 @@ main() {
         exit 1
     fi
 
-    if [[ -z "${DOTFILES_BACKUP_PASSPHRASE:-}" ]]; then
-        read -rsp "Enter backup passphrase: " DOTFILES_BACKUP_PASSPHRASE
-        echo
-        export DOTFILES_BACKUP_PASSPHRASE
-    fi
+    ensure_passphrase
 
     if [[ -n "$local_backup" ]]; then
         echo "Restoring local config from: $local_backup"
