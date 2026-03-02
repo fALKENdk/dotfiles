@@ -23,13 +23,13 @@ defaults write com.apple.dock show-recents -bool false
 defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
 defaults write NSGlobalDomain com.apple.keyboard.fnState -bool true
 
-# Secondary click in bottom-right corner.
-defaults write com.apple.AppleMultitouchTrackpad TrackpadRightClick -bool true
+# Secondary click in bottom-right corner (disable two-finger mode to avoid conflict).
+defaults write com.apple.AppleMultitouchTrackpad TrackpadRightClick -bool false
 defaults write com.apple.AppleMultitouchTrackpad TrackpadCornerSecondaryClick -int 2
-defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadRightClick -bool true
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadRightClick -bool false
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadCornerSecondaryClick -int 2
-defaults -currentHost write NSGlobalDomain com.apple.trackpad.enableSecondaryClick -bool true
+defaults -currentHost write NSGlobalDomain com.apple.trackpad.enableSecondaryClick -bool false
 defaults -currentHost write NSGlobalDomain com.apple.trackpad.trackpadCornerClickBehavior -int 1
 
-killall Finder Dock >/dev/null 2>&1 || true
-echo "macOS defaults applied."
+killall Finder Dock cfprefsd SystemUIServer >/dev/null 2>&1 || true
+echo "macOS defaults applied. Log out and back in if trackpad or scroll changes don't take effect immediately."
