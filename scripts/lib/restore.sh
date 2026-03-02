@@ -2,8 +2,6 @@
 set -euo pipefail
 
 # Shared helpers for restore workflows.
-#
-# @uses require_cmd from lib/platform.sh
 
 # Check for files that would be overwritten during restore.
 # Prints conflicts and returns 1 if any are found and overwrite is not enabled.
@@ -21,15 +19,15 @@ check_restore_conflicts() {
     [[ "$overwrite" == "1" ]] && return 0
 
     local conflicts=()
-    local f
-    for f in "$@"; do
-        [[ -e "$target_dir/$f" ]] && conflicts+=("$f")
+    local file
+    for file in "$@"; do
+        [[ -e "$target_dir/$file" ]] && conflicts+=("$file")
     done
 
     if [[ "${#conflicts[@]}" -gt 0 ]]; then
         echo "Restore aborted. Existing files would be overwritten:" >&2
-        for f in "${conflicts[@]}"; do
-            echo "  - $target_dir/$f" >&2
+        for file in "${conflicts[@]}"; do
+            echo "  - $target_dir/$file" >&2
         done
         echo "Set ${env_hint}=1 to overwrite." >&2
         return 1

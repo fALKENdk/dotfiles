@@ -1,4 +1,4 @@
-export DOTFILES_SECRETS_BACKEND="pass"
+export DOTFILES_SECRETS_STORE="pass"
 NVM_SCRIPT="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}/opt/nvm/nvm.sh"
 [[ -s "$NVM_SCRIPT" ]] || NVM_SCRIPT="$NVM_DIR/nvm.sh"
 NVM_COMPLETION="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}/opt/nvm/etc/bash_completion.d/nvm"

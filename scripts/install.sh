@@ -1,33 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Entry point for machine setup:
-# 1) install packages
-# 2) create/update symlinks
-# 3) apply macOS defaults unless skipped
-#
-# Uses manual DOTFILES_DIR instead of lib/init.sh because this script runs
-# before symlinks exist (it creates them).
+# Entry point for machine setup: packages, symlinks, and macOS defaults.
+# Uses manual DOTFILES_DIR instead of lib/init.sh because this script
+# runs before symlinks exist.
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$DOTFILES_DIR/scripts/lib/platform.sh"
 PLATFORM="$(detect_platform)"
 SKIP_MACOS=0
-
-activate_homebrew_env() {
-    # Ensure tools installed by Homebrew are visible to this parent process.
-    if command -v brew >/dev/null 2>&1; then
-        eval "$(brew shellenv)"
-        return 0
-    fi
-
-    if [[ -x /opt/homebrew/bin/brew ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-    elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    elif [[ -x /usr/local/bin/brew ]]; then
-        eval "$(/usr/local/bin/brew shellenv)"
-    fi
-}
 
 for arg in "$@"; do
     case "$arg" in
@@ -42,7 +22,7 @@ done
 
 echo "==> Installing packages"
 "$DOTFILES_DIR/scripts/packages.sh"
-activate_homebrew_env
+activate_homebrew
 
 echo "==> Ensuring Oh My Zsh"
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then

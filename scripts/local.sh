@@ -53,17 +53,17 @@ cmd_init() {
         exit 1
     fi
 
-    while IFS= read -r rel_path; do
-        local src="$EXAMPLE_DIR/$rel_path"
-        local dst="$LOCAL_DIR/$rel_path"
+    while IFS= read -r relative_path; do
+        local source_path="$EXAMPLE_DIR/$relative_path"
+        local destination_path="$LOCAL_DIR/$relative_path"
 
-        if [[ -e "$dst" ]]; then
-            echo "  exists: $rel_path"
+        if [[ -e "$destination_path" ]]; then
+            echo "  exists: $relative_path"
             skipped=$((skipped + 1))
         else
-            mkdir -p "$(dirname "$dst")"
-            cp "$src" "$dst"
-            echo "  seeded: $rel_path"
+            mkdir -p "$(dirname "$destination_path")"
+            cp "$source_path" "$destination_path"
+            echo "  seeded: $relative_path"
             seeded=$((seeded + 1))
         fi
     done < <(list_relative_files "$EXAMPLE_DIR")
@@ -82,7 +82,7 @@ cmd_list() {
 
 cmd_backup() {
     local output="${1:-$HOME/local-$DOTFILES_TIMESTAMP.enc}"
-    local tmp_tar
+    local tmp_archive
 
     require_cmd tar
 
@@ -91,21 +91,21 @@ cmd_backup() {
         exit 1
     fi
 
-    tmp_tar="$(mktemp)"
-    trap 'rm -f "$tmp_tar"' EXIT
-    tar -cf "$tmp_tar" -C "$DOTFILES_DIR" local
+    tmp_archive="$(mktemp)"
+    trap 'rm -f "$tmp_archive"' EXIT
+    tar -cf "$tmp_archive" -C "$DOTFILES_DIR" local
 
-    encrypt_file "$tmp_tar" "$output" DOTFILES_BACKUP_PASSPHRASE
+    encrypt_file "$tmp_archive" "$output" DOTFILES_BACKUP_PASSPHRASE
 
     chmod 600 "$output"
-    rm -f "$tmp_tar"
+    rm -f "$tmp_archive"
     trap - EXIT
     echo "Backup written: $output"
 }
 
 cmd_restore() {
     local input="${1:-}"
-    local tmp_tar extract_dir
+    local tmp_archive extract_dir
     local overwrite="${DOTFILES_LOCAL_RESTORE_OVERWRITE:-0}"
 
     require_cmd tar
@@ -119,14 +119,14 @@ cmd_restore() {
         exit 1
     }
 
-    tmp_tar="$(mktemp)"
-    trap 'rm -f "${tmp_tar:-}"; rm -rf "${extract_dir:-}"' EXIT
+    tmp_archive="$(mktemp)"
+    trap 'rm -f "${tmp_archive:-}"; rm -rf "${extract_dir:-}"' EXIT
 
-    decrypt_file "$input" "$tmp_tar" DOTFILES_BACKUP_PASSPHRASE
+    decrypt_file "$input" "$tmp_archive" DOTFILES_BACKUP_PASSPHRASE
 
     extract_dir="$(mktemp -d)"
-    tar -xf "$tmp_tar" -C "$extract_dir"
-    rm -f "$tmp_tar"
+    tar -xf "$tmp_archive" -C "$extract_dir"
+    rm -f "$tmp_archive"
 
     if [[ ! -d "$extract_dir/local" ]]; then
         echo "Archive does not contain a local/ directory." >&2
@@ -135,8 +135,8 @@ cmd_restore() {
     fi
 
     local files=()
-    while IFS= read -r f; do
-        files+=("$f")
+    while IFS= read -r file; do
+        files+=("$file")
     done < <(list_relative_files "$extract_dir/local")
 
     if ! check_restore_conflicts "$overwrite" "$LOCAL_DIR" "DOTFILES_LOCAL_RESTORE_OVERWRITE" "${files[@]}"; then
@@ -145,9 +145,9 @@ cmd_restore() {
     fi
 
     mkdir -p "$LOCAL_DIR"
-    while IFS= read -r f; do
-        mkdir -p "$(dirname "$LOCAL_DIR/$f")"
-        cp -p "$extract_dir/local/$f" "$LOCAL_DIR/$f"
+    while IFS= read -r file; do
+        mkdir -p "$(dirname "$LOCAL_DIR/$file")"
+        cp -p "$extract_dir/local/$file" "$LOCAL_DIR/$file"
     done < <(list_relative_files "$extract_dir/local")
 
     rm -rf "$extract_dir"
@@ -156,15 +156,15 @@ cmd_restore() {
 }
 
 main() {
-    local cmd="${1:-}"
+    local subcommand="${1:-}"
     shift || true
 
-    [[ "$cmd" == "_completions" ]] && {
+    [[ "$subcommand" == "_completions" ]] && {
         echo "init list backup restore help"
         return
     }
 
-    case "$cmd" in
+    case "$subcommand" in
         init) cmd_init ;;
         list) cmd_list ;;
         backup)
@@ -177,7 +177,7 @@ main() {
             usage
             ;;
         *)
-            echo "Unknown command: $cmd" >&2
+            echo "Unknown command: $subcommand" >&2
             usage
             exit 1
             ;;

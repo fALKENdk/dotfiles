@@ -2,11 +2,8 @@
 set -euo pipefail
 
 # Package installation helpers for Homebrew and Cursor.
-#
-# Remote installer execution can be disabled by setting:
-#   DOTFILES_ALLOW_REMOTE_INSTALLERS=0
+# Set DOTFILES_ALLOW_REMOTE_INSTALLERS=0 to disable remote installer execution.
 
-# Install Homebrew if not already present, then activate its shell environment.
 ensure_homebrew() {
     if command -v brew >/dev/null 2>&1; then
         return 0
@@ -15,13 +12,7 @@ ensure_homebrew() {
     echo "Homebrew not found. Installing..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-    if [[ -x /opt/homebrew/bin/brew ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-    elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    elif [[ -x /usr/local/bin/brew ]]; then
-        eval "$(/usr/local/bin/brew shellenv)"
-    fi
+    activate_homebrew
 }
 
 # Symlink the Cursor CLI into ~/.local/bin when the app bundle exists
@@ -52,7 +43,6 @@ ensure_cursor_cli() {
     fi
 }
 
-# Install Cursor via the official installer script, then link the CLI.
 install_cursor_official() {
     if command -v cursor >/dev/null 2>&1; then
         echo "Cursor CLI already available."
@@ -75,8 +65,6 @@ install_cursor_official() {
 }
 
 # Run `brew bundle` on the Brewfile, then install Cursor.
-#
-# @param $1 dotfiles_dir - path to the dotfiles root (must contain Brewfile)
 install_packages() {
     local dotfiles_dir="$1"
 

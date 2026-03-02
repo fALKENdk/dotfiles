@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Secrets map helpers: validate, iterate, and update the JSON mapping
-# between environment variables and backend entries.
-#
-# @global MAP_FILE - path to secrets-map.json
+# Validate, iterate, and update the JSON mapping between environment
+# variables and secrets store entries.
 
-MAP_FILE="${DOTFILES_MAP_FILE:-$DOTFILES_DIR/local/secrets/secrets-map.json}"
+SECRETS_MAP_FILE="${DOTFILES_SECRETS_MAP_FILE:-$DOTFILES_DIR/local/secrets/secrets-map.json}"
 
-# Validate that MAP_FILE exists and contains a well-formed entries array.
-#
-# @throws exits 1 if file is missing or malformed
+# Validate that SECRETS_MAP_FILE exists and contains a well-formed entries array.
 require_map() {
-    if [[ ! -f "$MAP_FILE" ]]; then
-        echo "Map file not found: $MAP_FILE" >&2
+    if [[ ! -f "$SECRETS_MAP_FILE" ]]; then
+        echo "Map file not found: $SECRETS_MAP_FILE" >&2
         exit 1
     fi
 
@@ -23,54 +19,51 @@ require_map() {
         all(
             $entries[];
             (type == "object") and
-            (.env_var and .service) and
+            (.env_var and .label) and
             (.env_var | test("^[A-Za-z_][A-Za-z0-9_]*$"))
         )
-    ' "$MAP_FILE" >/dev/null 2>&1; then
-        echo "Invalid map file (expected JSON with entries array): $MAP_FILE" >&2
-        echo "Each entry must include env_var/service, and env_var must be a valid shell identifier." >&2
+    ' "$SECRETS_MAP_FILE" >/dev/null 2>&1; then
+        echo "Invalid map file (expected JSON with entries array): $SECRETS_MAP_FILE" >&2
+        echo "Each entry must include env_var/label, and env_var must be a valid shell identifier." >&2
         exit 1
     fi
 }
 
 # Create an empty map file when missing (used by restore flow).
 ensure_map_file() {
-    if [[ -f "$MAP_FILE" ]]; then
+    if [[ -f "$SECRETS_MAP_FILE" ]]; then
         return 0
     fi
 
-    mkdir -p "$(dirname "$MAP_FILE")"
-    cat >"$MAP_FILE" <<'EOF'
+    mkdir -p "$(dirname "$SECRETS_MAP_FILE")"
+    cat >"$SECRETS_MAP_FILE" <<'EOF'
 {
   "entries": []
 }
 EOF
 }
 
-# Resolve the account field: "__USER__" or empty becomes the current OS user.
-#
-# @param $1 account - account string from secrets map
-# @return stdout - resolved account name
-resolve_account() {
-    local account="$1"
-    if [[ -z "$account" || "$account" == "__USER__" ]]; then
+# Resolve the owner field: "__USER__" or empty becomes the current OS user.
+resolve_owner() {
+    local owner="$1"
+    if [[ -z "$owner" || "$owner" == "__USER__" ]]; then
         if [[ -n "${USER:-}" ]]; then
             printf '%s' "$USER"
         else
             id -un
         fi
     else
-        printf '%s' "$account"
+        printf '%s' "$owner"
     fi
 }
 
-# Normalize an account value back to the portable template form.
-normalize_account_template() {
-    local account="$1"
-    if [[ -z "$account" || (-n "${USER:-}" && "$account" == "$USER") ]]; then
+# Normalize an owner value back to the portable template form.
+normalize_owner_template() {
+    local owner="$1"
+    if [[ -z "$owner" || (-n "${USER:-}" && "$owner" == "$USER") ]]; then
         printf '%s' "__USER__"
     else
-        printf '%s' "$account"
+        printf '%s' "$owner"
     fi
 }
 
@@ -83,46 +76,37 @@ render_tabular() {
     fi
 }
 
-# Emit map entries as tab-separated lines:
-# env_var \t service \t account \t note
-#
-# @return stdout - TSV lines
+# Emit map entries as tab-separated lines: env_var \t label \t owner \t note
 emit_map_entries() {
     jq -r '
     (.entries // .) | if type == "array" then . else [] end | .[] |
     select(type == "object") |
-    select(.env_var and .service) |
-    [.env_var, .service, (.account // ""), (.note // "")] |
+    select(.env_var and .label) |
+    [.env_var, .label, (.owner // ""), (.note // "")] |
     map(tostring) | join("\t")
-  ' "$MAP_FILE"
+  ' "$SECRETS_MAP_FILE"
 }
 
-# Iterate map entries and call a function for each.
-# The callback receives: env_var service account note
-#
-# @param $1 callback - function name to call per entry
+# Iterate map entries, calling a function for each with: env_var label owner note
 for_each_map_entry() {
     local callback="$1"
 
-    while IFS=$'\t' read -r env_var service account note; do
-        [[ -z "$env_var" || -z "$service" ]] && continue
-        account="$(resolve_account "$account")"
-        "$callback" "$env_var" "$service" "$account" "$note"
+    while IFS=$'\t' read -r env_var label owner note; do
+        [[ -z "$env_var" || -z "$label" ]] && continue
+        owner="$(resolve_owner "$owner")"
+        "$callback" "$env_var" "$label" "$owner" "$note"
     done < <(emit_map_entries)
 }
 
 # Look up a single map entry by its env_var field.
-#
-# @param  $1 target - ENV_VAR name to search for
-# @return stdout - TSV row (env_var \t service \t account \t note)
-# @return 1 if not found
+# Returns 1 if not found.
 find_entry_by_env_var() {
     local target="$1"
-    while IFS=$'\t' read -r env_var service account note; do
-        [[ -z "$env_var" || -z "$service" ]] && continue
+    while IFS=$'\t' read -r env_var label owner note; do
+        [[ -z "$env_var" || -z "$label" ]] && continue
         if [[ "$env_var" == "$target" ]]; then
-            account="$(resolve_account "$account")"
-            printf '%s\t%s\t%s\t%s\n' "$env_var" "$service" "$account" "$note"
+            owner="$(resolve_owner "$owner")"
+            printf '%s\t%s\t%s\t%s\n' "$env_var" "$label" "$owner" "$note"
             return 0
         fi
     done < <(emit_map_entries)
@@ -131,35 +115,30 @@ find_entry_by_env_var() {
 }
 
 # Add a map entry if it doesn't already exist.
-# Returns 1 (without error) if the entry already exists.
-#
-# @param $1 env_var          - environment variable name
-# @param $2 service          - backend service identifier
-# @param $3 account_template - account (or "__USER__")
-# @param $4 note             - optional description
+# Returns 1 (without error) if the entry is already present.
 ensure_map_entry() {
     local env_var="$1"
-    local service="$2"
-    local account_template="$3"
+    local label="$2"
+    local owner_template="$3"
     local note="${4:-}"
     local tmp_map
 
     if jq -e \
         --arg env_var "$env_var" \
-        --arg service "$service" \
+        --arg label "$label" \
         '
         (.entries // .) as $entries |
         ($entries | if type == "array" then . else [] end) as $arr |
-        any($arr[]; .env_var == $env_var and .service == $service)
-    ' "$MAP_FILE" >/dev/null 2>&1; then
+        any($arr[]; .env_var == $env_var and .label == $label)
+    ' "$SECRETS_MAP_FILE" >/dev/null 2>&1; then
         return 1
     fi
 
     tmp_map="$(mktemp)"
     jq \
         --arg env_var "$env_var" \
-        --arg service "$service" \
-        --arg account "$account_template" \
+        --arg label "$label" \
+        --arg owner "$owner_template" \
         --arg note "$note" \
         '
         (.entries // .) as $entries |
@@ -168,13 +147,13 @@ ensure_map_entry() {
             entries: (
                 $arr + [{
                     env_var: $env_var,
-                    service: $service,
-                    account: $account,
+                    label: $label,
+                    owner: $owner,
                     note: $note
                 }]
             )
         }
-    ' "$MAP_FILE" >"$tmp_map"
-    mv "$tmp_map" "$MAP_FILE"
+    ' "$SECRETS_MAP_FILE" >"$tmp_map"
+    mv "$tmp_map" "$SECRETS_MAP_FILE"
     return 0
 }

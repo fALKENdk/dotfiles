@@ -6,7 +6,7 @@ set -euo pipefail
 # On a new Mac with nothing installed, run:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/fALKENdk/dotfiles/main/scripts/bootstrap.sh)
 #
-# Handles: Xcode CLT -> git clone -> install.sh (brew, packages, omz, symlinks, defaults)
+# Handles: Xcode CLT -> git clone -> install.sh
 # Safe to re-run — every step is idempotent.
 
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/fALKENdk/dotfiles.git}"

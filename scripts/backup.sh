@@ -2,7 +2,6 @@
 set -euo pipefail
 
 # Run all encrypted backup tasks in one command.
-# Creates local, secrets, and SSH key backups in one folder.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 
 usage() {
@@ -14,12 +13,12 @@ Usage:
 Examples:
   dotfiles backup
   dotfiles backup ~/backups/dotfiles
-  DOTFILES_BACKUP_DIR=~/backups/dotfiles dotfiles backup
+  DOTFILES_BACKUP_PASSPHRASE='...' dotfiles backup ~/backups/dotfiles
 
 Notes:
   - output_dir defaults to DOTFILES_BACKUP_DIR, then to $HOME
-  - file names include a shared timestamp so all artifacts match
-  - set DOTFILES_BACKUP_PASSPHRASE for non-interactive backup
+  - File names include a shared timestamp so all artifacts match
+  - Set DOTFILES_BACKUP_PASSPHRASE for non-interactive backup
 EOF
 }
 

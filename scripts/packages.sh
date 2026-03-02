@@ -10,13 +10,9 @@ PLATFORM="$(detect_platform)"
 
 install_packages "$DOTFILES_DIR"
 
-# --- Platform-specific packages (add extras below) ---
-
 case "$PLATFORM" in
-    macos)
-        # brew install <formula>
-        ;;
+    macos) ;;
     linux)
-        brew install pass # secrets backend (macOS uses built-in `security`)
+        brew install pass
         ;;
 esac

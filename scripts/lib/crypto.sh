@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Shared encrypt/decrypt helpers wrapping openssl AES-256-CBC + PBKDF2.
-#
-# @uses require_cmd from lib/platform.sh
-# @see secrets.sh, local.sh, ssh.sh
+# Encrypt/decrypt helpers using openssl AES-256-CBC + PBKDF2.
 
-# Encrypt a file with AES-256-CBC + PBKDF2.
-# Prompts for passphrase interactively unless $passphrase_var is set.
+# Encrypt a file. Prompts for passphrase unless $passphrase_var is set.
 #
-# @param $1 input  - path to plaintext input file
-# @param $2 output - path to write encrypted output
-# @param $3 passphrase_var - (optional) name of env var holding the passphrase
+# @param $1 input          - path to plaintext input file
+# @param $2 output         - path to write encrypted output
+# @param $3 passphrase_var - name of env var holding the passphrase (optional)
 encrypt_file() {
     local input="$1" output="$2" passphrase_var="${3:-}"
 
@@ -25,12 +21,11 @@ encrypt_file() {
     fi
 }
 
-# Decrypt a file encrypted with encrypt_file().
-# Prompts for passphrase interactively unless $passphrase_var is set.
+# Decrypt a file. Prompts for passphrase unless $passphrase_var is set.
 #
-# @param $1 input  - path to encrypted input file
-# @param $2 output - path to write decrypted output
-# @param $3 passphrase_var - (optional) name of env var holding the passphrase
+# @param $1 input          - path to encrypted input file
+# @param $2 output         - path to write decrypted output
+# @param $3 passphrase_var - name of env var holding the passphrase (optional)
 decrypt_file() {
     local input="$1" output="$2" passphrase_var="${3:-}"
 

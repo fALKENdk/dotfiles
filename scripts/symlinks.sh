@@ -2,7 +2,6 @@
 set -euo pipefail
 
 # Link managed dotfiles and helper commands.
-#
 # Uses manual DOTFILES_DIR instead of lib/init.sh because this script
 # creates the symlinks that lib/init.sh relies on.
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -14,9 +13,9 @@ PLATFORM="$(detect_platform)"
 link_file "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
 link_file "$DOTFILES_DIR/git/.gitignore_global" "$HOME/.gitignore_global"
 
-for f in "$DOTFILES_DIR/local/git"/.gitconfig-*; do
-    [[ -f "$f" ]] || continue
-    link_file "$f" "$HOME/$(basename "$f")"
+for file in "$DOTFILES_DIR/local/git"/.gitconfig-*; do
+    [[ -f "$file" ]] || continue
+    link_file "$file" "$HOME/$(basename "$file")"
 done
 
 # --- npm (concatenated, not symlinked) ---

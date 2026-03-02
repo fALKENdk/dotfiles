@@ -23,10 +23,10 @@ Run 'dotfiles <command> help' for subcommand details.
 EOF
 }
 
-cmd="${1:-help}"
+subcommand="${1:-help}"
 shift || true
 
-case "$cmd" in
+case "$subcommand" in
     _completions) echo "install packages symlinks macos secrets local ssh backup restore audit help" ;;
     install) exec "$DOTFILES_DIR/scripts/install.sh" "$@" ;;
     packages) exec "$DOTFILES_DIR/scripts/packages.sh" "$@" ;;
@@ -40,7 +40,7 @@ case "$cmd" in
     restore) exec "$DOTFILES_DIR/scripts/restore.sh" "$@" ;;
     help | -h | --help) usage ;;
     *)
-        echo "Unknown command: $cmd" >&2
+        echo "Unknown command: $subcommand" >&2
         usage >&2
         exit 1
         ;;

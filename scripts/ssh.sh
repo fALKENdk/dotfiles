@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Encrypted backup/restore helper for SSH key material.
+# Encrypted backup/restore for SSH key material.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 source "$DOTFILES_DIR/scripts/lib/restore.sh"
@@ -28,7 +28,6 @@ EOF
 }
 
 collect_files() {
-    # Emit relative file names that should be included in backup.
     local ssh_dir="$1"
     local pattern file
     local had_nullglob=0
@@ -51,7 +50,6 @@ collect_files() {
 }
 
 set_file_permissions() {
-    # Restore secure/default permissions based on SSH file type.
     local path="$1"
     local name
     name="$(basename "$path")"
@@ -85,11 +83,10 @@ cmd_list() {
 }
 
 cmd_backup() {
-    # Stage selected files and encrypt as a portable backup artifact.
     local output="${1:-$HOME/ssh-$DOTFILES_TIMESTAMP.enc}"
     local ssh_dir="${2:-$HOME/.ssh}"
     local files=()
-    local tmp_dir stage_dir tar_file manifest_file
+    local tmp_dir stage_dir archive_file manifest_file
     local file
 
     require_cmd tar
@@ -105,7 +102,7 @@ cmd_backup() {
     tmp_dir="$(mktemp -d)"
     trap 'rm -rf "$tmp_dir"' EXIT
     stage_dir="$tmp_dir/ssh"
-    tar_file="$tmp_dir/ssh-keys.tar"
+    archive_file="$tmp_dir/ssh-keys.tar"
     manifest_file="$stage_dir/MANIFEST.txt"
     mkdir -p "$stage_dir"
 
@@ -122,9 +119,9 @@ cmd_backup() {
         done
     } >"$manifest_file"
 
-    tar -cf "$tar_file" -C "$tmp_dir" ssh
+    tar -cf "$archive_file" -C "$tmp_dir" ssh
 
-    encrypt_file "$tar_file" "$output" DOTFILES_BACKUP_PASSPHRASE
+    encrypt_file "$archive_file" "$output" DOTFILES_BACKUP_PASSPHRASE
 
     chmod 600 "$output"
     rm -rf "$tmp_dir"
@@ -135,10 +132,9 @@ cmd_backup() {
 }
 
 cmd_restore() {
-    # Decrypt backup and restore files into target ~/.ssh directory.
     local input="${1:-}"
     local ssh_dir="${2:-$HOME/.ssh}"
-    local tmp_dir tar_file extract_dir
+    local tmp_dir archive_file extract_dir
     local overwrite="${DOTFILES_SSH_RESTORE_OVERWRITE:-0}"
     local file
     local entries=()
@@ -156,14 +152,14 @@ cmd_restore() {
 
     tmp_dir="$(mktemp -d)"
     trap 'rm -rf "$tmp_dir"' EXIT
-    tar_file="$tmp_dir/ssh-keys.tar"
+    archive_file="$tmp_dir/ssh-keys.tar"
     extract_dir="$tmp_dir/extract"
 
-    decrypt_file "$input" "$tar_file" DOTFILES_BACKUP_PASSPHRASE
+    decrypt_file "$input" "$archive_file" DOTFILES_BACKUP_PASSPHRASE
 
     while IFS= read -r file; do
         entries+=("$file")
-    done < <(tar -tf "$tar_file")
+    done < <(tar -tf "$archive_file")
 
     if [[ "${#entries[@]}" -eq 0 ]]; then
         echo "Backup archive is empty." >&2
@@ -180,7 +176,7 @@ cmd_restore() {
     done
 
     mkdir -p "$extract_dir"
-    tar -xf "$tar_file" -C "$extract_dir"
+    tar -xf "$archive_file" -C "$extract_dir"
     mkdir -p "$ssh_dir"
     chmod 700 "$ssh_dir"
 
@@ -209,21 +205,21 @@ cmd_restore() {
 }
 
 main() {
-    local cmd="${1:-}"
+    local subcommand="${1:-}"
     shift || true
 
-    [[ "$cmd" == "_completions" ]] && {
+    [[ "$subcommand" == "_completions" ]] && {
         echo "list backup restore help"
         return
     }
 
-    case "$cmd" in
+    case "$subcommand" in
         list) cmd_list "$@" ;;
         backup) cmd_backup "$@" ;;
         restore) cmd_restore "$@" ;;
         "" | -h | --help | help) usage ;;
         *)
-            echo "Unknown command: $cmd" >&2
+            echo "Unknown command: $subcommand" >&2
             usage
             exit 1
             ;;

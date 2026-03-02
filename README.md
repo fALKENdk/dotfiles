@@ -142,11 +142,11 @@ npm credentials are never stored in tracked files.
 - `npm/.npmrc` references those environment variables
 - Secret mappings live in `local/secrets/secrets-map.json`
 
-Backends:
+Stores:
 
 - macOS: `security` (Keychain)
 - Linux: `pass` (Password Store)
-- Override: `DOTFILES_SECRETS_BACKEND=security|pass`
+- Override: `DOTFILES_SECRETS_STORE=security|pass`
 
 Common commands:
 
@@ -178,15 +178,15 @@ pass init "<your-gpg-key-id-or-email>"
 
 ### Secrets Map Format
 
-The mapping at `local/secrets/secrets-map.json` defines which environment variables correspond to which backend entries:
+The mapping at `local/secrets/secrets-map.json` defines which environment variables correspond to which store entries:
 
 ```json
 {
   "entries": [
     {
       "env_var": "AZURE_NPM_USERNAME",
-      "service": "azure-npm",
-      "account": "__USER__",
+      "label": "azure-npm",
+      "owner": "__USER__",
       "note": "Azure DevOps NPM feed username"
     }
   ]
@@ -194,9 +194,11 @@ The mapping at `local/secrets/secrets-map.json` defines which environment variab
 ```
 
 - `env_var` — exported shell variable name (must be a valid identifier)
-- `service` — backend service/item name (Keychain service or pass path component)
-- `account` — account name; use `"__USER__"` or `""` to resolve to the current OS user at runtime
+- `label` — identifier for the secret in the store (Keychain service name or pass path component)
+- `owner` — who the secret belongs to; use `"__USER__"` or `""` to resolve to the current OS user at runtime
 - `note` — optional human-readable description
+
+Override the map file path with `DOTFILES_SECRETS_MAP_FILE`.
 
 ## SSH Key Backup
 

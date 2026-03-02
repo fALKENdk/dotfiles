@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
 # Shared bootstrap for CLI scripts invoked via symlink.
 # Resolves the caller's symlink chain, then exports SCRIPT_DIR and DOTFILES_DIR.
-#
-# @global SCRIPT_DIR   - absolute path to the calling script's directory
-# @global DOTFILES_DIR - absolute path to the dotfiles root
-# @uses lib/platform.sh
 
-# Walk the symlink chain to find the real script directory.
-#
-# @param $1 path - path that may be a symlink
-# @return stdout - absolute directory containing the resolved script
 _resolve_script_dir() {
     local path="$1"
     while [[ -L "$path" ]]; do

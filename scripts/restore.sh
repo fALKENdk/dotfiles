@@ -2,7 +2,6 @@
 set -euo pipefail
 
 # Restore all encrypted backups in one command.
-# Counterpart to backup.sh -- restores local config, secrets, and SSH keys.
 source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 
 usage() {
