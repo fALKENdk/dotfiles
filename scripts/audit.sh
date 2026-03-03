@@ -43,7 +43,7 @@ fi
 echo
 echo "==> shfmt style"
 if command -v shfmt >/dev/null 2>&1; then
-    shfmt -d -i 4 -ci -bn "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+    shfmt -d -i 4 "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
 else
     echo "Skipped: shfmt not installed."
 fi

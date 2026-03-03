@@ -49,12 +49,12 @@ main() {
     secrets_backup="$backup_directory/secrets.enc"
     ssh_backup="$backup_directory/ssh.enc"
 
-    echo "Writing backups to: $backup_directory"
-    "$DOTFILES_DIR/scripts/local.sh" backup "$local_backup"
-    "$DOTFILES_DIR/scripts/secrets.sh" backup "$secrets_backup"
-    "$DOTFILES_DIR/scripts/ssh.sh" backup "$ssh_backup"
+    echo "Backing up to: $backup_directory"
+    "$DOTFILES_DIR/scripts/local.sh" backup "$local_backup" >/dev/null
+    "$DOTFILES_DIR/scripts/secrets.sh" backup "$secrets_backup" >/dev/null
+    "$DOTFILES_DIR/scripts/ssh.sh" backup "$ssh_backup" >/dev/null
 
-    echo "All backups complete:"
+    echo "Backup complete:"
     echo "  - $local_backup"
     echo "  - $secrets_backup"
     echo "  - $ssh_backup"
