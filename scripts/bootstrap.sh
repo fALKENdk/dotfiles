@@ -13,25 +13,31 @@ DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/fALKENdk/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
 ensure_xcode_command_line_tools() {
-    if xcode-select -p &> /dev/null; then
-        echo "Xcode Command Line Tools: already installed."
+    if ! xcode-select -p &> /dev/null; then
+        echo "Installing Xcode Command Line Tools..."
+        xcode-select --install
+
+        echo "Waiting for installation (follow the GUI prompt)..."
+        local waited=0
+        until xcode-select -p &> /dev/null; do
+            sleep 5
+            waited=$((waited + 5))
+            if [[ "$waited" -ge 900 ]]; then
+                echo "Timed out after 15 minutes waiting for Xcode Command Line Tools." >&2
+                exit 1
+            fi
+        done
+        echo "Xcode Command Line Tools: installed."
         return 0
     fi
 
-    echo "Installing Xcode Command Line Tools..."
-    xcode-select --install
+    echo "Xcode Command Line Tools: already installed."
 
-    echo "Waiting for installation (follow the GUI prompt)..."
-    local waited=0
-    until xcode-select -p &> /dev/null; do
-        sleep 5
-        waited=$((waited + 5))
-        if [[ "$waited" -ge 900 ]]; then
-            echo "Timed out after 15 minutes waiting for Xcode Command Line Tools." >&2
-            exit 1
-        fi
-    done
-    echo "Xcode Command Line Tools: installed."
+    if softwareupdate --list 2>&1 | grep -qi "command line tools"; then
+        echo "Update available for Command Line Tools. Installing..."
+        softwareupdate --install --all --agree-to-license
+        echo "Command Line Tools updated."
+    fi
 }
 
 clone_dotfiles() {

@@ -76,6 +76,11 @@ install_packages() {
     fi
 
     echo "Installing packages from Brewfile..."
-    brew bundle --file "$dotfiles_directory/Brewfile"
+    if ! brew bundle --file "$dotfiles_directory/Brewfile"; then
+        echo
+        echo "Warning: Some Brewfile dependencies failed to install." >&2
+        echo "Run 'brew bundle --file $dotfiles_directory/Brewfile' to retry." >&2
+        echo
+    fi
     install_cursor_official
 }
