@@ -151,7 +151,7 @@ command_backup() {
     local temp_plaintext
     local written=0
 
-    ensure_passphrase
+    ensure_passphrase_with_confirmation
     mkdir -p "$(dirname "$output")"
     temp_plaintext="$(mktemp)"
     trap 'rm -f "$temp_plaintext"' EXIT

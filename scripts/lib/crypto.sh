@@ -11,6 +11,25 @@ ensure_passphrase() {
     fi
 }
 
+ensure_passphrase_with_confirmation() {
+    if [[ -n "${DOTFILES_BACKUP_PASSPHRASE:-}" ]]; then
+        return 0
+    fi
+
+    read -rsp "Enter backup passphrase: " DOTFILES_BACKUP_PASSPHRASE
+    echo
+    local confirmation
+    read -rsp "Confirm backup passphrase: " confirmation
+    echo
+
+    if [[ "$DOTFILES_BACKUP_PASSPHRASE" != "$confirmation" ]]; then
+        echo "Passphrases do not match." >&2
+        exit 1
+    fi
+
+    export DOTFILES_BACKUP_PASSPHRASE
+}
+
 encrypt_file() {
     local input="$1" output="$2" passphrase_variable="${3:-}"
 

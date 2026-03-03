@@ -100,7 +100,7 @@ command_backup() {
     local temp_archive
 
     require_command tar
-    ensure_passphrase
+    ensure_passphrase_with_confirmation
     mkdir -p "$(dirname "$output")"
 
     if [[ ! -d "$LOCAL_DIR" ]]; then

@@ -40,7 +40,7 @@ main() {
     local backup_directory="$base_directory/$DOTFILES_TIMESTAMP"
     local local_backup secrets_backup ssh_backup
 
-    ensure_passphrase
+    ensure_passphrase_with_confirmation
 
     mkdir -p "$backup_directory"
     backup_directory="$(cd "$backup_directory" && pwd)"

@@ -91,7 +91,7 @@ command_backup() {
     local file
 
     require_command tar
-    ensure_passphrase
+    ensure_passphrase_with_confirmation
     mkdir -p "$(dirname "$output")"
 
     while IFS= read -r file; do
