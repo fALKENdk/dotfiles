@@ -19,9 +19,13 @@ defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"
 
 defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock show-recents -bool false
+defaults write com.apple.dock minimize-to-application -bool true
 
 defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false
 defaults write NSGlobalDomain com.apple.keyboard.fnState -bool true
+
+defaults write com.apple.screencapture disable-shadow -bool true
+defaults write com.apple.screencapture location -string "$HOME/screenshots"
 
 # Secondary click in bottom-right corner (disable two-finger mode to avoid conflict).
 defaults write com.apple.AppleMultitouchTrackpad TrackpadRightClick -bool false
