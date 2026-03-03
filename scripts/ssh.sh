@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2> /dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 source "$DOTFILES_DIR/scripts/lib/restore.sh"
 
 usage() {
-    cat <<EOF
+    cat << EOF
 Usage:
   dotfiles-ssh list [ssh_directory]
   dotfiles-ssh backup [output.enc] [ssh_directory]
@@ -120,7 +120,7 @@ command_backup() {
         for file in "${files[@]}"; do
             echo "  - $file"
         done
-    } >"$manifest_file"
+    } > "$manifest_file"
 
     tar -cf "$archive_file" -C "$temp_directory" ssh
 
@@ -145,18 +145,18 @@ command_restore() {
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
-        --overwrite)
-            overwrite=1
-            shift
-            ;;
-        -*)
-            echo "Unknown option: $1" >&2
-            exit 1
-            ;;
-        *)
-            positional_arguments+=("$1")
-            shift
-            ;;
+            --overwrite)
+                overwrite=1
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *)
+                positional_arguments+=("$1")
+                shift
+                ;;
         esac
     done
 
@@ -239,15 +239,15 @@ main() {
     }
 
     case "$subcommand" in
-    list) command_list "$@" ;;
-    backup) command_backup "$@" ;;
-    restore) command_restore "$@" ;;
-    "" | -h | --help | help) usage ;;
-    *)
-        echo "Unknown command: $subcommand" >&2
-        usage
-        exit 1
-        ;;
+        list) command_list "$@" ;;
+        backup) command_backup "$@" ;;
+        restore) command_restore "$@" ;;
+        "" | -h | --help | help) usage ;;
+        *)
+            echo "Unknown command: $subcommand" >&2
+            usage
+            exit 1
+            ;;
     esac
 }
 

@@ -5,7 +5,7 @@ set -euo pipefail
 # Set DOTFILES_ALLOW_REMOTE_INSTALLERS=0 to disable remote installer execution.
 
 ensure_homebrew() {
-    if command -v brew >/dev/null 2>&1; then
+    if command -v brew > /dev/null 2>&1; then
         return 0
     fi
 
@@ -20,7 +20,7 @@ ensure_homebrew() {
 ensure_cursor_cli() {
     local cursor_cli_source=""
 
-    if command -v cursor >/dev/null 2>&1; then
+    if command -v cursor > /dev/null 2>&1; then
         return 0
     fi
 
@@ -44,7 +44,7 @@ ensure_cursor_cli() {
 }
 
 install_cursor_official() {
-    if command -v cursor >/dev/null 2>&1; then
+    if command -v cursor > /dev/null 2>&1; then
         echo "Cursor CLI already available."
         return 0
     fi
@@ -54,7 +54,7 @@ install_cursor_official() {
         return 0
     fi
 
-    if command -v curl >/dev/null 2>&1; then
+    if command -v curl > /dev/null 2>&1; then
         echo "Installing Cursor via official installer..."
         curl https://cursor.com/install -fsS | bash
     else

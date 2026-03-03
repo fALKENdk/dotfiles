@@ -13,7 +13,7 @@ DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/fALKENdk/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
 ensure_xcode_command_line_tools() {
-    if xcode-select -p &>/dev/null; then
+    if xcode-select -p &> /dev/null; then
         echo "Xcode Command Line Tools: already installed."
         return 0
     fi
@@ -23,7 +23,7 @@ ensure_xcode_command_line_tools() {
 
     echo "Waiting for installation (follow the GUI prompt)..."
     local waited=0
-    until xcode-select -p &>/dev/null; do
+    until xcode-select -p &> /dev/null; do
         sleep 5
         waited=$((waited + 5))
         if [[ "$waited" -ge 900 ]]; then

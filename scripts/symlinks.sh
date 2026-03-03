@@ -21,17 +21,17 @@ if [[ -f "$DOTFILES_DIR/local/git/.gitconfig" ]]; then
         link_file "$file" "$HOME/.gitconfig-$provider_name"
 
         case "$provider_name" in
-        github)
-            printf '\n[includeIf "hasconfig:remote.*.url:git@github.com:*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >>"$HOME/.gitconfig"
-            printf '\n[includeIf "hasconfig:remote.*.url:https://github.com/*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >>"$HOME/.gitconfig"
-            ;;
-        azure-devops)
-            printf '\n[includeIf "hasconfig:remote.*.url:git@ssh.dev.azure.com:*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >>"$HOME/.gitconfig"
-            printf '\n[includeIf "hasconfig:remote.*.url:https://dev.azure.com/*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >>"$HOME/.gitconfig"
-            ;;
-        *)
-            printf '\n[include]\n    path = ~/.gitconfig-%s\n' "$provider_name" >>"$HOME/.gitconfig"
-            ;;
+            github)
+                printf '\n[includeIf "hasconfig:remote.*.url:git@github.com:*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >> "$HOME/.gitconfig"
+                printf '\n[includeIf "hasconfig:remote.*.url:https://github.com/*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >> "$HOME/.gitconfig"
+                ;;
+            azure-devops)
+                printf '\n[includeIf "hasconfig:remote.*.url:git@ssh.dev.azure.com:*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >> "$HOME/.gitconfig"
+                printf '\n[includeIf "hasconfig:remote.*.url:https://dev.azure.com/*/**"]\n    path = ~/.gitconfig-%s\n' "$provider_name" >> "$HOME/.gitconfig"
+                ;;
+            *)
+                printf '\n[include]\n    path = ~/.gitconfig-%s\n' "$provider_name" >> "$HOME/.gitconfig"
+                ;;
         esac
     done
     echo "Generated: ~/.gitconfig"
@@ -47,7 +47,7 @@ if [[ -f "$DOTFILES_DIR/local/npm/.npmrc" ]]; then
     has_npm_extras=0
     for file in "$DOTFILES_DIR/local/npm"/.npmrc-*; do
         [[ -f "$file" ]] || continue
-        cat "$file" >>"$HOME/.npmrc"
+        cat "$file" >> "$HOME/.npmrc"
         has_npm_extras=1
     done
 
@@ -69,20 +69,20 @@ link_file "$DOTFILES_DIR/zsh/.zshrc" "$HOME/.zshrc"
 link_file "$DOTFILES_DIR/zsh/.zprofile" "$HOME/.zprofile"
 
 mkdir -p "$HOME/.config/dotfiles"
-printf '%s\n' "$PLATFORM" >"$HOME/.config/dotfiles/platform"
+printf '%s\n' "$PLATFORM" > "$HOME/.config/dotfiles/platform"
 echo "Platform set: $HOME/.config/dotfiles/platform -> $PLATFORM"
 
 case "$PLATFORM" in
-macos)
-    link_file \
-        "$DOTFILES_DIR/config/cursor/settings.json" \
-        "$HOME/Library/Application Support/Cursor/User/settings.json"
-    ;;
-linux)
-    link_file \
-        "$DOTFILES_DIR/config/cursor/settings.json" \
-        "$HOME/.config/Cursor/User/settings.json"
-    ;;
+    macos)
+        link_file \
+            "$DOTFILES_DIR/config/cursor/settings.json" \
+            "$HOME/Library/Application Support/Cursor/User/settings.json"
+        ;;
+    linux)
+        link_file \
+            "$DOTFILES_DIR/config/cursor/settings.json" \
+            "$HOME/.config/Cursor/User/settings.json"
+        ;;
 esac
 
 link_command "$DOTFILES_DIR/scripts/dotfiles.sh" "dotfiles"

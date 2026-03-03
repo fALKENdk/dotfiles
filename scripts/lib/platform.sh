@@ -3,18 +3,18 @@ set -euo pipefail
 
 detect_platform() {
     case "$(uname -s)" in
-    Darwin) echo "macos" ;;
-    Linux) echo "linux" ;;
-    *)
-        echo "Unsupported platform: $(uname -s)" >&2
-        return 1
-        ;;
+        Darwin) echo "macos" ;;
+        Linux) echo "linux" ;;
+        *)
+            echo "Unsupported platform: $(uname -s)" >&2
+            return 1
+            ;;
     esac
 }
 
 require_command() {
     local command_name="$1"
-    if ! command -v "$command_name" >/dev/null 2>&1; then
+    if ! command -v "$command_name" > /dev/null 2>&1; then
         echo "Missing required command: $command_name" >&2
         exit 1
     fi
@@ -22,7 +22,7 @@ require_command() {
 
 # Tries standard installation paths when brew is not yet on PATH.
 activate_homebrew() {
-    if command -v brew >/dev/null 2>&1; then
+    if command -v brew > /dev/null 2>&1; then
         eval "$(brew shellenv)"
         return 0
     fi

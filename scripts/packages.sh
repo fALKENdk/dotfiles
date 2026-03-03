@@ -9,6 +9,6 @@ PLATFORM="$(detect_platform)"
 
 install_packages "$DOTFILES_DIR"
 
-if [[ "$PLATFORM" == "linux" ]] && ! command -v pass >/dev/null 2>&1; then
+if [[ "$PLATFORM" == "linux" ]] && ! command -v pass > /dev/null 2>&1; then
     brew install pass
 fi

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2> /dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 source "$DOTFILES_DIR/scripts/lib/format.sh"
 source "$DOTFILES_DIR/scripts/lib/secrets-store.sh"
 source "$DOTFILES_DIR/scripts/lib/secrets-map.sh"
 
 usage() {
-    cat <<EOF
+    cat << EOF
 Usage:
   dotfiles-secrets list
   dotfiles-secrets doctor
@@ -75,9 +75,9 @@ command_doctor() {
     }
 
     temp_table="$(mktemp)"
-    printf 'STATE\tENV_VAR\tLABEL\n' >"$temp_table"
-    for_each_map_entry _doctor_row >>"$temp_table"
-    render_tabular <"$temp_table"
+    printf 'STATE\tENV_VAR\tLABEL\n' > "$temp_table"
+    for_each_map_entry _doctor_row >> "$temp_table"
+    render_tabular < "$temp_table"
     rm -f "$temp_table"
     echo "present=$present missing=$missing"
 }
@@ -110,7 +110,7 @@ resolve_entry() {
         exit 1
     }
     local _env_var _note
-    IFS=$'\t' read -r _env_var ENTRY_LABEL ENTRY_OWNER _note <<<"$row"
+    IFS=$'\t' read -r _env_var ENTRY_LABEL ENTRY_OWNER _note <<< "$row"
 }
 
 command_set() {
@@ -169,7 +169,7 @@ command_backup() {
         fi
 
         value_base64="$(printf '%s' "$value" | base64 | tr -d '\n')"
-        printf '%s\t%s\t%s\t%s\n' "$env_var" "$label" "$owner" "$value_base64" >>"$temp_plaintext"
+        printf '%s\t%s\t%s\t%s\n' "$env_var" "$label" "$owner" "$value_base64" >> "$temp_plaintext"
         written=$((written + 1))
     }
 
@@ -211,7 +211,7 @@ command_restore() {
 
     while IFS=$'\t' read -r env_var label owner value_base64; do
         [[ -z "$env_var" || -z "$label" || -z "$owner" || -z "$value_base64" ]] && continue
-        value="$(printf '%s' "$value_base64" | base64 -d 2>/dev/null || printf '%s' "$value_base64" | base64 -D 2>/dev/null || true)"
+        value="$(printf '%s' "$value_base64" | base64 -d 2> /dev/null || printf '%s' "$value_base64" | base64 -D 2> /dev/null || true)"
         [[ -z "$value" ]] && continue
 
         owner_template="$(normalize_owner_template "$owner")"
@@ -220,7 +220,7 @@ command_restore() {
         secret_set "$label" "$resolved_owner" "$value"
         ensure_map_entry "$env_var" "$label" "$owner_template" "" && map_entries_added=$((map_entries_added + 1))
         restored=$((restored + 1))
-    done <"$temp_plaintext"
+    done < "$temp_plaintext"
 
     rm -f "$temp_plaintext"
     trap - EXIT
@@ -243,22 +243,22 @@ main() {
     require_store
 
     case "$subcommand" in
-    list) command_list "$@" ;;
-    doctor) command_doctor "$@" ;;
-    env) command_env "$@" ;;
-    set) command_set "$@" ;;
-    get) command_get "$@" ;;
-    delete) command_delete "$@" ;;
-    backup) command_backup "$@" ;;
-    restore) command_restore "$@" ;;
-    "" | -h | --help | help)
-        usage
-        ;;
-    *)
-        echo "Unknown command: $subcommand" >&2
-        usage
-        exit 1
-        ;;
+        list) command_list "$@" ;;
+        doctor) command_doctor "$@" ;;
+        env) command_env "$@" ;;
+        set) command_set "$@" ;;
+        get) command_get "$@" ;;
+        delete) command_delete "$@" ;;
+        backup) command_backup "$@" ;;
+        restore) command_restore "$@" ;;
+        "" | -h | --help | help)
+            usage
+            ;;
+        *)
+            echo "Unknown command: $subcommand" >&2
+            usage
+            exit 1
+            ;;
     esac
 }
 

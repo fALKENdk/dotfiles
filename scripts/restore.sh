@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2> /dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 
 usage() {
-    cat <<EOF
+    cat << EOF
 Usage:
   dotfiles restore [backup_directory]
   dotfiles restore <file.enc>
@@ -32,7 +32,7 @@ EOF
 
 find_latest_subdirectory() {
     local directory="$1"
-    find "$directory" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -r | head -1
+    find "$directory" -maxdepth 1 -mindepth 1 -type d 2> /dev/null | sort -r | head -1
 }
 
 collect_backups_from_directory() {
@@ -46,51 +46,51 @@ main() {
     local local_backup="" secrets_backup="" ssh_backup=""
 
     case "${1:-}" in
-    -h | --help | help)
-        usage
-        return 0
-        ;;
+        -h | --help | help)
+            usage
+            return 0
+            ;;
     esac
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
-        --local | --secrets | --ssh)
-            if [[ -z "${2:-}" || "$2" == --* ]]; then
-                echo "Error: $1 requires a file path argument." >&2
-                exit 1
-            fi
-            case "$1" in
-            --local) local_backup="$2" ;;
-            --secrets) secrets_backup="$2" ;;
-            --ssh) ssh_backup="$2" ;;
-            esac
-            shift 2
-            ;;
-        *)
-            if [[ -d "$1" ]]; then
-                local directory
-                directory="$(cd "$1" && pwd)"
-                collect_backups_from_directory "$directory"
-            elif [[ -f "$1" ]]; then
-                local filename
-                filename="$(basename "$1")"
-                case "$filename" in
-                local.enc | local-*.enc) local_backup="$1" ;;
-                secrets.enc | secrets-*.enc) secrets_backup="$1" ;;
-                ssh.enc | ssh-*.enc) ssh_backup="$1" ;;
-                *)
-                    echo "Cannot determine backup type from filename: $filename" >&2
-                    echo "Use --local, --secrets, or --ssh to specify the type." >&2
+            --local | --secrets | --ssh)
+                if [[ -z "${2:-}" || "$2" == --* ]]; then
+                    echo "Error: $1 requires a file path argument." >&2
                     exit 1
-                    ;;
+                fi
+                case "$1" in
+                    --local) local_backup="$2" ;;
+                    --secrets) secrets_backup="$2" ;;
+                    --ssh) ssh_backup="$2" ;;
                 esac
-            else
-                echo "File or directory not found: $1" >&2
-                usage >&2
-                exit 1
-            fi
-            shift
-            ;;
+                shift 2
+                ;;
+            *)
+                if [[ -d "$1" ]]; then
+                    local directory
+                    directory="$(cd "$1" && pwd)"
+                    collect_backups_from_directory "$directory"
+                elif [[ -f "$1" ]]; then
+                    local filename
+                    filename="$(basename "$1")"
+                    case "$filename" in
+                        local.enc | local-*.enc) local_backup="$1" ;;
+                        secrets.enc | secrets-*.enc) secrets_backup="$1" ;;
+                        ssh.enc | ssh-*.enc) ssh_backup="$1" ;;
+                        *)
+                            echo "Cannot determine backup type from filename: $filename" >&2
+                            echo "Use --local, --secrets, or --ssh to specify the type." >&2
+                            exit 1
+                            ;;
+                    esac
+                else
+                    echo "File or directory not found: $1" >&2
+                    usage >&2
+                    exit 1
+                fi
+                shift
+                ;;
         esac
     done
 

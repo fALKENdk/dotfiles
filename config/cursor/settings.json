@@ -15,6 +15,5 @@
   "update.releaseTrack": "prerelease",
   "[shellscript]": {
     "editor.defaultFormatter": "mkhl.shfmt"
-  },
-  "shfmt.flags": ["-ci", "-bn"]
+  }
 }

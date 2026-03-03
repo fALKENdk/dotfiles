@@ -10,7 +10,7 @@ backup_if_needed() {
     local link_target
 
     if [[ -L "$target" ]]; then
-        link_target="$(readlink "$target" 2>/dev/null || true)"
+        link_target="$(readlink "$target" 2> /dev/null || true)"
         if [[ "$link_target" == "${DOTFILES_DIR:-$HOME/.dotfiles}/"* ]]; then
             rm "$target"
             echo "Removed managed symlink: $target"

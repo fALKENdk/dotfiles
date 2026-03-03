@@ -18,7 +18,7 @@ require_map() {
             (.env_var and .label) and
             (.env_var | test("^[A-Za-z_][A-Za-z0-9_]*$"))
         )
-    ' "$SECRETS_MAP_FILE" >/dev/null 2>&1; then
+    ' "$SECRETS_MAP_FILE" > /dev/null 2>&1; then
         echo "Invalid map file (expected JSON with entries array): $SECRETS_MAP_FILE" >&2
         echo "Each entry must include env_var/label, and env_var must be a valid shell identifier." >&2
         exit 1
@@ -32,7 +32,7 @@ ensure_map_file() {
     fi
 
     mkdir -p "$(dirname "$SECRETS_MAP_FILE")"
-    cat >"$SECRETS_MAP_FILE" <<'EOF'
+    cat > "$SECRETS_MAP_FILE" << 'EOF'
 {
   "entries": []
 }
@@ -113,7 +113,7 @@ ensure_map_entry() {
         (.entries // .) as $entries |
         ($entries | if type == "array" then . else [] end) as $arr |
         any($arr[]; .env_var == $env_var and .label == $entry_label)
-    ' "$SECRETS_MAP_FILE" >/dev/null 2>&1; then
+    ' "$SECRETS_MAP_FILE" > /dev/null 2>&1; then
         return 1
     fi
 
@@ -136,7 +136,7 @@ ensure_map_entry() {
                 }]
             )
         }
-    ' "$SECRETS_MAP_FILE" >"$temp_map"; then
+    ' "$SECRETS_MAP_FILE" > "$temp_map"; then
         rm -f "$temp_map"
         echo "Failed to update map file." >&2
         return 1

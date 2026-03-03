@@ -6,7 +6,7 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "==> Shell startup timing (aim for <200ms)"
 for _ in 1 2 3; do
-    /usr/bin/time -p zsh -i -c exit >/dev/null
+    /usr/bin/time -p zsh -i -c exit > /dev/null
 done
 
 echo
@@ -18,32 +18,25 @@ else
 fi
 
 echo
-echo "==> Looking for obvious secret patterns in repo"
-if command -v rg >/dev/null 2>&1; then
-    rg -n -i --hidden \
-        --glob '!.git/**' \
-        --glob '!local/**' \
-        --glob '!local.example/**' \
-        --glob '!scripts/audit.sh' \
-        --glob '!scripts/secrets.sh' \
-        --glob '!README.md' \
-        '(password|_password|token|api[_-]?key|secret)' "$DOTFILES_DIR" || true
+echo "==> Secrets scan (gitleaks)"
+if command -v gitleaks > /dev/null 2>&1; then
+    gitleaks detect --source "$DOTFILES_DIR" --no-git --verbose || true
 else
-    echo "Skipped: rg (ripgrep) not installed."
+    echo "Skipped: gitleaks not installed."
 fi
 
 echo
 echo "==> ShellCheck lint"
-if command -v shellcheck >/dev/null 2>&1; then
-    shellcheck -x -e SC1091 "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+if command -v shellcheck > /dev/null 2>&1; then
+    shellcheck "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
 else
     echo "Skipped: shellcheck not installed."
 fi
 
 echo
 echo "==> shfmt style"
-if command -v shfmt >/dev/null 2>&1; then
-    shfmt -d -i 4 "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
+if command -v shfmt > /dev/null 2>&1; then
+    shfmt -d "$DOTFILES_DIR"/scripts/*.sh "$DOTFILES_DIR"/scripts/lib/*.sh || true
 else
     echo "Skipped: shfmt not installed."
 fi

@@ -35,5 +35,5 @@ defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadCorner
 defaults -currentHost write NSGlobalDomain com.apple.trackpad.enableSecondaryClick -bool false
 defaults -currentHost write NSGlobalDomain com.apple.trackpad.trackpadCornerClickBehavior -int 1
 
-killall Finder Dock cfprefsd SystemUIServer >/dev/null 2>&1 || true
+killall Finder Dock cfprefsd SystemUIServer > /dev/null 2>&1 || true
 echo "macOS defaults applied. Log out and back in if trackpad or scroll changes don't take effect immediately."

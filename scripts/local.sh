@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2> /dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 source "$DOTFILES_DIR/scripts/lib/restore.sh"
 
@@ -16,10 +16,10 @@ SEED_FILES=(
 
 list_relative_files() {
     local base_directory="$1"
-    if command -v fd >/dev/null 2>&1; then
+    if command -v fd > /dev/null 2>&1; then
         fd -t f -HI --base-directory "$base_directory"
     else
-        (
+        (   
             cd "$base_directory"
             find . -type f -print | sed 's|^\./||'
         )
@@ -27,7 +27,7 @@ list_relative_files() {
 }
 
 usage() {
-    cat <<EOF
+    cat << EOF
 Usage:
   dotfiles-local init
   dotfiles-local list
@@ -87,7 +87,7 @@ command_list() {
         return 0
     fi
 
-    if command -v tree >/dev/null 2>&1; then
+    if command -v tree > /dev/null 2>&1; then
         tree -a --noreport "$LOCAL_DIR"
     else
         list_relative_files "$LOCAL_DIR"
@@ -127,18 +127,18 @@ command_restore() {
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
-        --overwrite)
-            overwrite=1
-            shift
-            ;;
-        -*)
-            echo "Unknown option: $1" >&2
-            exit 1
-            ;;
-        *)
-            input="$1"
-            shift
-            ;;
+            --overwrite)
+                overwrite=1
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *)
+                input="$1"
+                shift
+                ;;
         esac
     done
 
@@ -200,22 +200,22 @@ main() {
     }
 
     case "$subcommand" in
-    init) command_init ;;
-    list) command_list ;;
-    backup)
-        command_backup "$@"
-        ;;
-    restore)
-        command_restore "$@"
-        ;;
-    "" | -h | --help | help)
-        usage
-        ;;
-    *)
-        echo "Unknown command: $subcommand" >&2
-        usage
-        exit 1
-        ;;
+        init) command_init ;;
+        list) command_list ;;
+        backup)
+            command_backup "$@"
+            ;;
+        restore)
+            command_restore "$@"
+            ;;
+        "" | -h | --help | help)
+            usage
+            ;;
+        *)
+            echo "Unknown command: $subcommand" >&2
+            usage
+            exit 1
+            ;;
     esac
 }
 

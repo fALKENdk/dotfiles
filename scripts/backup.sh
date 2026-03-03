@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
+source "$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2> /dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)/lib/init.sh"
 source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 
 usage() {
-    cat <<EOF
+    cat << EOF
 Usage:
   dotfiles backup [output_directory]
   dotfiles-backup [output_directory]
@@ -25,10 +25,10 @@ EOF
 
 main() {
     case "${1:-}" in
-    -h | --help | help)
-        usage
-        return 0
-        ;;
+        -h | --help | help)
+            usage
+            return 0
+            ;;
     esac
 
     if [[ "$#" -gt 1 ]]; then
@@ -50,9 +50,9 @@ main() {
     ssh_backup="$backup_directory/ssh.enc"
 
     echo "Backing up to: $backup_directory"
-    "$DOTFILES_DIR/scripts/local.sh" backup "$local_backup" >/dev/null
-    "$DOTFILES_DIR/scripts/secrets.sh" backup "$secrets_backup" >/dev/null
-    "$DOTFILES_DIR/scripts/ssh.sh" backup "$ssh_backup" >/dev/null
+    "$DOTFILES_DIR/scripts/local.sh" backup "$local_backup" > /dev/null
+    "$DOTFILES_DIR/scripts/secrets.sh" backup "$secrets_backup" > /dev/null
+    "$DOTFILES_DIR/scripts/ssh.sh" backup "$ssh_backup" > /dev/null
 
     echo "Backup complete:"
     echo "  - $local_backup"

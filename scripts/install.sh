@@ -11,23 +11,23 @@ RESTORE_PATH=""
 
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
-    --skip-macos)
-        SKIP_MACOS=1
-        shift
-        ;;
-    --restore)
-        if [[ -z "${2:-}" ]]; then
-            echo "Error: --restore requires a path argument." >&2
+        --skip-macos)
+            SKIP_MACOS=1
+            shift
+            ;;
+        --restore)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: --restore requires a path argument." >&2
+                exit 1
+            fi
+            RESTORE_PATH="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            echo "Usage: ./scripts/install.sh [--skip-macos] [--restore <path>]" >&2
             exit 1
-        fi
-        RESTORE_PATH="$2"
-        shift 2
-        ;;
-    *)
-        echo "Unknown argument: $1" >&2
-        echo "Usage: ./scripts/install.sh [--skip-macos] [--restore <path>]" >&2
-        exit 1
-        ;;
+            ;;
     esac
 done
 
