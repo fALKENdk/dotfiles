@@ -7,13 +7,15 @@ source "$DOTFILES_DIR/scripts/lib/crypto.sh"
 usage() {
     cat << EOF
 Usage:
-  dotfiles restore [backup_directory]
-  dotfiles restore <file.enc>
-  dotfiles restore --local <file.enc> --secrets <file.enc> --ssh <file.enc>
+  dotfiles restore [--overwrite] [backup_directory]
+  dotfiles restore [--overwrite] <file.enc>
+  dotfiles restore [--overwrite] --local <file.enc> --secrets <file.enc> --ssh <file.enc>
 
 Examples:
   dotfiles restore
+  dotfiles restore --overwrite
   dotfiles restore backups/20260302-120000
+  dotfiles restore --overwrite backups/20260302-120000
   dotfiles restore backups/20260302-120000/local.enc
   dotfiles restore --local ~/custom-name.enc
   DOTFILES_BACKUP_PASSPHRASE='...' dotfiles restore
@@ -24,9 +26,7 @@ Notes:
   - When given a file, the type is inferred from the filename (local.enc, secrets.enc, ssh.enc)
   - Use --local/--secrets/--ssh flags for files with non-standard names
   - Set DOTFILES_BACKUP_PASSPHRASE for non-interactive restore
-  - To overwrite existing files, use --overwrite on the module directly:
-    dotfiles-local restore --overwrite <file.enc>
-    dotfiles-ssh restore --overwrite <file.enc>
+  - --overwrite is forwarded to local/ssh module restores
 EOF
 }
 
@@ -44,6 +44,7 @@ collect_backups_from_directory() {
 
 main() {
     local local_backup="" secrets_backup="" ssh_backup=""
+    local overwrite=0
 
     case "${1:-}" in
         -h | --help | help)
@@ -54,6 +55,10 @@ main() {
 
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
+            --overwrite)
+                overwrite=1
+                shift
+                ;;
             --local | --secrets | --ssh)
                 if [[ -z "${2:-}" || "$2" == --* ]]; then
                     echo "Error: $1 requires a file path argument." >&2
@@ -65,6 +70,11 @@ main() {
                     --ssh) ssh_backup="$2" ;;
                 esac
                 shift 2
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                usage >&2
+                exit 1
                 ;;
             *)
                 if [[ -d "$1" ]]; then
@@ -116,7 +126,11 @@ main() {
 
     if [[ -n "$local_backup" ]]; then
         echo "Restoring local config from: $local_backup"
-        "$DOTFILES_DIR/scripts/local.sh" restore "$local_backup"
+        if [[ "$overwrite" -eq 1 ]]; then
+            "$DOTFILES_DIR/scripts/local.sh" restore --overwrite "$local_backup"
+        else
+            "$DOTFILES_DIR/scripts/local.sh" restore "$local_backup"
+        fi
     fi
 
     if [[ -n "$secrets_backup" ]]; then
@@ -126,7 +140,11 @@ main() {
 
     if [[ -n "$ssh_backup" ]]; then
         echo "Restoring SSH keys from: $ssh_backup"
-        "$DOTFILES_DIR/scripts/ssh.sh" restore "$ssh_backup"
+        if [[ "$overwrite" -eq 1 ]]; then
+            "$DOTFILES_DIR/scripts/ssh.sh" restore --overwrite "$ssh_backup"
+        else
+            "$DOTFILES_DIR/scripts/ssh.sh" restore "$ssh_backup"
+        fi
     fi
 
     echo "Restore complete."

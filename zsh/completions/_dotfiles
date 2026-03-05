@@ -11,7 +11,11 @@ _dotfiles() {
                         local) compadd ${=:-$(dotfiles-local _completions 2>/dev/null)} ;;
                         ssh) compadd ${=:-$(dotfiles-ssh _completions 2>/dev/null)} ;;
                         install) compadd -- --skip-macos --restore ;;
-                        backup | restore) _files ;;
+                        backup) _files ;;
+                        restore)
+                            compadd -- --overwrite --local --secrets --ssh
+                            _files
+                            ;;
                     esac
                     ;;
                 *) _files ;;
