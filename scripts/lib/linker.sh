@@ -4,7 +4,8 @@ set -euo pipefail
 BACKUP_DIR="${BACKUP_DIR:-$HOME/.dotfiles-backups/${DOTFILES_TIMESTAMP:-$(date +%Y%m%d-%H%M%S)}}"
 
 # Managed symlinks (pointing into $DOTFILES_DIR) are removed silently.
-# Real files are moved to $BACKUP_DIR.
+# Foreign symlinks (pointing elsewhere) and real files are moved to $BACKUP_DIR
+# so we never overwrite a link the user or another tool set up intentionally.
 backup_if_needed() {
     local target="$1"
     local link_target
@@ -14,7 +15,14 @@ backup_if_needed() {
         if [[ "$link_target" == "${DOTFILES_DIR:-$HOME/.dotfiles}/"* ]]; then
             rm "$target"
             echo "Removed managed symlink: $target"
+            return 0
         fi
+
+        mkdir -p "$BACKUP_DIR"
+        local safe_name="${target#/}"
+        safe_name="${safe_name//\//__}"
+        mv "$target" "$BACKUP_DIR/$safe_name"
+        echo "Backed up foreign symlink: $target ($link_target) -> $BACKUP_DIR/$safe_name"
         return 0
     fi
 

@@ -1,12 +1,9 @@
-# Common platform profile values shared across macOS and Linux.
-export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+# Interactive setup shared across macOS and Linux.
 
-# NVM paths: prefer Homebrew-installed nvm, fall back to $NVM_DIR.
-# HOMEBREW_PREFIX is set by `brew shellenv` in .zprofile before this runs.
-NVM_SCRIPT="${HOMEBREW_PREFIX:-}/opt/nvm/nvm.sh"
-[[ -s "$NVM_SCRIPT" ]] || NVM_SCRIPT="$NVM_DIR/nvm.sh"
-NVM_COMPLETION="${HOMEBREW_PREFIX:-}/opt/nvm/etc/bash_completion.d/nvm"
-[[ -s "$NVM_COMPLETION" ]] || NVM_COMPLETION="$NVM_DIR/bash_completion"
+case "$OSTYPE" in
+    darwin*) export DOTFILES_SECRETS_STORE="${DOTFILES_SECRETS_STORE:-security}" ;;
+    linux*)  export DOTFILES_SECRETS_STORE="${DOTFILES_SECRETS_STORE:-pass}" ;;
+esac
 
 if [[ -x "${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" ]]; then
     if _secrets_output="$("${DOTFILES_DIR:-$HOME/.dotfiles}/scripts/secrets.sh" env 2>/dev/null)"; then

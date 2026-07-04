@@ -15,6 +15,10 @@
 # Machine-specific local config (backed up via dotfiles-local)
 local/
 
+# AI agent skills: track .skill-lock.json (and skills-custom/), not the
+# source-installed skills, which are rehydrated via `npx skills install`.
+ai/agents/skills/
+
 # Encrypted backups (managed by dotfiles backup/restore)
 backups/
 

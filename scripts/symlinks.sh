@@ -65,8 +65,23 @@ link_file "$DOTFILES_DIR/ssh/config" "$HOME/.ssh/config"
 chmod 700 "$HOME/.ssh"
 chmod 600 "$HOME/.ssh/config" || true
 
+link_file "$DOTFILES_DIR/zsh/.zshenv" "$HOME/.zshenv"
 link_file "$DOTFILES_DIR/zsh/.zshrc" "$HOME/.zshrc"
 link_file "$DOTFILES_DIR/zsh/.zprofile" "$HOME/.zprofile"
+
+# AI agent config. The whole dir is symlinked so tools like `npx skills` write
+# inside the repo; only .skill-lock.json is tracked (skills/ is gitignored).
+# Rehydrate source-installed skills on a new machine with `npx skills install`.
+if [[ -d "$DOTFILES_DIR/ai/agents" ]]; then
+    link_file "$DOTFILES_DIR/ai/agents" "$HOME/.agents"
+
+    # Self-authored global skills live in ai/agents/skills-custom (tracked) and
+    # are linked into the live skills dir so the agent runtime discovers them.
+    for skill in "$DOTFILES_DIR/ai/agents/skills-custom"/*/; do
+        [[ -d "$skill" ]] || continue
+        link_file "${skill%/}" "$HOME/.agents/skills/$(basename "$skill")"
+    done
+fi
 
 mkdir -p "$HOME/.config/dotfiles"
 printf '%s\n' "$PLATFORM" > "$HOME/.config/dotfiles/platform"
